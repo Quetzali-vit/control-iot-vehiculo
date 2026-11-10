@@ -1,0 +1,68 @@
+diff --git a/.env.example b/.env.example
+index 47614df..6fc2ba5 100644
+--- a/.env.example
++++ b/.env.example
+@@ -10,6 +10,9 @@ DB_NAME=vehiculo_iot
+ # Clave para operaciones de control y eliminación (encabezado X-API-Key)
+ API_KEY=cambia_esta_clave
+ 
++# Orígenes autorizados por CORS para la app de control (separados por coma)
++CORS_ORIGINS=https://quetzali-vit.github.io,http://127.0.0.1:5500,http://localhost:5500
++
+ # Origen que se guarda en historial_comandos
+ ORIGEN_MOVIMIENTO=API-LOCAL
+ 
+diff --git a/app/core/config.py b/app/core/config.py
+index fb94841..5e3aca3 100644
+--- a/app/core/config.py
++++ b/app/core/config.py
+@@ -22,6 +22,16 @@ class Settings(BaseSettings):
+     api_key: str = Field(min_length=8, description="Clave para operaciones de control y eliminación")
+     origen_movimiento: str = Field(default="API-LOCAL", max_length=30)
+ 
++    # Orígenes del navegador autorizados por CORS (separados por coma). CORS no es autenticación.
++    cors_origins: str = Field(
++        default="https://quetzali-vit.github.io",
++        description="Ejemplo: https://quetzali-vit.github.io,http://127.0.0.1:5500",
++    )
++
++    @property
++    def lista_cors(self) -> list[str]:
++        return [origen.strip().rstrip("/") for origen in self.cors_origins.split(",") if origen.strip()]
++
+     host: str = "127.0.0.1"
+     port: int = 8000
+ 
+diff --git a/app/main.py b/app/main.py
+index a55da09..771236b 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -3,9 +3,11 @@ from asyncio import to_thread
+ from contextlib import asynccontextmanager
+ 
+ from fastapi import FastAPI, Request
++from fastapi.middleware.cors import CORSMiddleware
+ from fastapi.openapi.docs import get_swagger_ui_html
+ from fastapi.responses import HTMLResponse, JSONResponse
+ 
++from app.core.config import get_settings
+ from app.core.exceptions import ApiError
+ from app.dependencies import get_contenedor
+ from app.routers import comandos, demos, estado, historial, movimientos, vehiculos, websocket
+@@ -56,6 +58,16 @@ app = FastAPI(
+     docs_url=None,
+ )
+ 
++# CORS: solo la app de control publicada en GitHub Pages (y los orígenes de CORS_ORIGINS).
++app.add_middleware(
++    CORSMiddleware,
++    allow_origins=get_settings().lista_cors,
++    allow_methods=["GET", "POST"],
++    allow_headers=["Content-Type", "X-API-Key"],
++    allow_credentials=False,
++    max_age=600,
++)
++
+ # Swagger UI siempre en modo claro, aunque el navegador o el sistema estén en modo oscuro.
+ MODO_CLARO = """
+ <meta name="color-scheme" content="only light">
