@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070a12">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Consola de control remoto de la retroexcavadora IoT: dos joysticks, comandos, DETENER prioritario y DEMO conectados a la API en AWS.">
+  <title>Control IoT · Retroexcavadora</title>
+
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body data-vista="control">
+  <a class="visually-hidden-focusable salto" href="#vista-control">Ir al control</a>
+
+  <div class="app">
+    <header class="cabecera">
+      <div class="marca">
+        <img src="assets/favicon.svg" alt="" width="40" height="40">
+        <div class="marca-texto">
+          <h1 id="vehiculo-nombre">Retroexcavadora</h1>
+          <p id="vehiculo-detalle">ID 1</p>
+        </div>
+      </div>
+
+      <!-- Tres indicadores independientes: WebSocket, API en AWS y Amazon RDS -->
+      <ul class="indicadores" aria-label="Estado de las conexiones">
+        <li id="ind-ws" class="indicador" data-tono="espera">
+          <span class="ind-led" aria-hidden="true"></span>
+          <i class="ind-icono bi bi-arrow-repeat" aria-hidden="true"></i>
+          <span class="ind-nombre">WebSocket</span>
+          <span class="ind-valor">Conectando</span>
+          <span class="ind-detalle visually-hidden"></span>
+          <button id="ind-ws-accion" class="ind-accion" type="button" hidden>Reconectar</button>
+        </li>
+        <li id="ind-api" class="indicador" data-tono="espera">
+          <span class="ind-led" aria-hidden="true"></span>
+          <i class="ind-icono bi bi-arrow-repeat" aria-hidden="true"></i>
+          <span class="ind-nombre">API AWS · 21 servicios</span>
+          <span class="ind-valor">Comprobando</span>
+          <span class="ind-detalle visually-hidden"></span>
+          <button id="ind-api-accion" class="ind-accion" type="button" hidden>Comprobar</button>
+        </li>
+        <li id="ind-rds" class="indicador" data-tono="neutro">
+          <span class="ind-led" aria-hidden="true"></span>
+          <i class="ind-icono bi bi-database-dash" aria-hidden="true"></i>
+          <span class="ind-nombre">Amazon RDS</span>
+          <span class="ind-valor">Sin verificar</span>
+          <span class="ind-detalle visually-hidden"></span>
+        </li>
+      </ul>
+    </header>
+
+    <main>
+      <!-- ================= Vista: CONTROL ================= -->
+      <section id="vista-control" class="vista" aria-label="Control">
+        <div class="estado-panel" aria-live="polite">
+          <div class="estado-principal">
+            <p class="estado-et">Estado del vehículo</p>
+            <p id="estado-grande" class="estado-grande" data-tono="detenido">Detenido</p>
+            <p class="estado-sub"><span id="ultima-accion">Sin acciones todavía</span></p>
+          </div>
+          <p id="estado-carga" class="estado-carga" role="status">Cargando vehículo, comandos y DEMO…</p>
+          <button id="btn-reintentar" class="btn-reintentar" type="button" hidden>Reintentar</button>
+        </div>
+
+        <div class="mando">
+          <!-- Joystick izquierdo: tracción -->
+          <section class="zona zona-izq" aria-labelledby="t-traccion">
+            <h2 id="t-traccion" class="zona-titulo">Tracción</h2>
+            <div id="joystick" class="joystick deshabilitado" tabindex="0" role="application" data-direccion="centro"
+                 aria-label="Joystick de tracción" aria-describedby="joy-ayuda" aria-disabled="true">
+              <span class="joy-marca" data-dir="arriba"><i class="bi bi-caret-up-fill" aria-hidden="true"></i></span>
+              <span class="joy-marca" data-dir="abajo"><i class="bi bi-caret-down-fill" aria-hidden="true"></i></span>
+              <span class="joy-marca" data-dir="izquierda"><i class="bi bi-caret-left-fill" aria-hidden="true"></i></span>
+              <span class="joy-marca" data-dir="derecha"><i class="bi bi-caret-right-fill" aria-hidden="true"></i></span>
+              <span class="joy-perilla" aria-hidden="true"></span>
+            </div>
+            <p class="joy-lectura"><span id="joy-estado">En el centro</span></p>
+          </section>
+
+          <!-- Paro de emergencia -->
+          <div class="zona-paro">
+            <button id="btn-detener" class="btn-detener" type="button" aria-keyshortcuts="Escape">
+              <span class="seta">
+                <i class="bi bi-stop-fill" aria-hidden="true"></i>
+                <span>Detener</span>
+              </span>
+            </button>
+          </div>
+
+          <!-- Joystick derecho: brazo y pala -->
+          <section class="zona zona-der" aria-labelledby="t-brazo">
+            <h2 id="t-brazo" class="zona-titulo">Brazo · Pala</h2>
+            <div id="joystick-brazo" class="joystick deshabilitado" tabindex="0" role="application" data-direccion="centro"
+                 aria-label="Joystick de brazo y pala" aria-describedby="joy-ayuda" aria-disabled="true">
+              <span class="joy-marca" data-dir="arriba" title="Subir brazo"><i class="bi bi-chevron-double-up" aria-hidden="true"></i></span>
+              <span class="joy-marca" data-dir="abajo" title="Bajar brazo"><i class="bi bi-chevron-double-down" aria-hidden="true"></i></span>
+              <span class="joy-marca" data-dir="izquierda" title="Abrir pala"><i class="bi bi-arrows-angle-expand" aria-hidden="true"></i></span>
+              <span class="joy-marca" data-dir="derecha" title="Cerrar pala"><i class="bi bi-arrows-angle-contract" aria-hidden="true"></i></span>
+              <span class="joy-perilla" aria-hidden="true"></span>
+            </div>
+            <p class="joy-lectura"><span id="joy-estado-brazo">En el centro</span></p>
+          </section>
+
+          <p id="joy-ayuda" class="visually-hidden">Joystick de tracción: arriba avanza, abajo retrocede, a los lados gira; con teclado usa las flechas o W, A, S, D. Joystick de brazo y pala: arriba sube el brazo, abajo lo baja, izquierda abre la pala y derecha la cierra; con teclado usa I, J, K, L. Al soltar se envía DETENER. Escape detiene.</p>
+
+          <!-- Comandos del catálogo que no maneja un joystick -->
+          <section class="zona-botones" aria-label="Funciones y movimientos combinados">
+            <div id="botones" class="botonera"></div>
+            <p id="botones-vacio" class="vacio" hidden>El catálogo no tiene más comandos aparte de los joysticks.</p>
+          </section>
+
+          <!-- DEMO -->
+          <section class="zona-demo" aria-labelledby="t-demo">
+            <h2 id="t-demo" class="demo-titulo"><i class="bi bi-collection-play" aria-hidden="true"></i> DEMO</h2>
+            <div class="demo-fila">
+              <select id="sel-demo" class="form-select" aria-label="Seleccionar DEMO" disabled>
+                <option value="">Cargando…</option>
+              </select>
+              <button id="btn-demo-iniciar" class="btn-demo iniciar" type="button" disabled aria-label="Iniciar DEMO">
+                <i class="bi bi-play-fill" aria-hidden="true"></i><span>Iniciar</span>
+              </button>
+              <button id="btn-demo-cancelar" class="btn-demo cancelar" type="button" disabled aria-label="Cancelar DEMO">
+                <i class="bi bi-x-lg" aria-hidden="true"></i><span>Cancelar</span>
+              </button>
+            </div>
+            <p id="joy-bloqueo" class="joy-bloqueo" hidden>DEMO en curso: los joysticks y los botones esperan a que termine.</p>
+            <div id="demo-avance" class="demo-avance" hidden>
+              <div class="progress" role="progressbar" aria-label="Avance de la DEMO" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div id="demo-barra" class="progress-bar"></div>
+              </div>
+              <p id="demo-texto" class="demo-texto" aria-live="polite"></p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ================= Vista: REGISTRO ================= -->
+      <section id="vista-registro" class="vista bitacora" aria-labelledby="t-registro" hidden>
+        <h2 id="t-registro">Registro de acciones</h2>
+        <p id="registro-vacio" class="vacio">Mueve un joystick o pulsa un botón para ver aquí cada etapa: solicitado, aceptado por la API y evento WebSocket.</p>
+        <ol id="registro" class="registro"></ol>
+        <p id="ultimo-evento" class="ultimo-evento">Aún no llegan eventos por WebSocket.</p>
+        <p class="bitacora-nota">«En línea» es la conexión de este navegador con el servidor WSS, no la del vehículo físico. Una respuesta 201 o un evento WebSocket tampoco confirman que el motor se movió.</p>
+      </section>
+    </main>
+
+    <footer class="creditos">
+      <p>Desarrollado por Quetzali Vite Cruz · 2026</p>
+    </footer>
+  </div>
+
+  <!-- DETENER siempre a la mano, también fuera de la vista Control -->
+  <button class="detener-flotante" type="button" data-detener aria-label="Detener el vehículo">
+    <i class="bi bi-stop-fill" aria-hidden="true"></i><span>Detener</span>
+  </button>
+
+  <nav class="nav" aria-label="Secciones">
+    <button class="nav-item" type="button" data-ir="control" aria-current="page">
+      <i class="bi bi-controller" aria-hidden="true"></i><span>Control</span>
+    </button>
+    <button class="nav-item" type="button" data-ir="registro">
+      <i class="bi bi-journal-text" aria-hidden="true"></i><span>Registro</span>
+    </button>
+    <button id="btn-clave" class="nav-item nav-clave" type="button" aria-haspopup="dialog" data-estado="falta">
+      <i class="bi bi-key-fill" aria-hidden="true"></i><span class="clave-texto">Clave</span>
+    </button>
+  </nav>
+
+  <!-- Clave de control (X-API-Key) -->
+  <dialog id="panel-clave" class="panel-clave" aria-labelledby="t-clave">
+    <form id="form-clave" autocomplete="off" method="dialog">
+      <h2 id="t-clave"><i class="bi bi-shield-lock" aria-hidden="true"></i> Clave de control</h2>
+      <label for="campo-clave" class="form-label">X-API-Key</label>
+      <div class="clave-fila">
+        <input id="campo-clave" class="form-control" type="password" inputmode="text" spellcheck="false"
+               autocapitalize="off" aria-describedby="clave-nota">
+        <button class="btn-guardar" type="submit">Usar clave</button>
+      </div>
+      <div class="clave-opciones">
+        <label class="form-check-label"><input id="mostrar-clave" class="form-check-input" type="checkbox"> Mostrar</label>
+        <label class="form-check-label"><input id="recordar-clave" class="form-check-input" type="checkbox" checked> Recordar en esta pestaña</label>
+      </div>
+      <p id="clave-nota" class="clave-nota">La clave se usa solo para mover, iniciar o cancelar. No se guarda en GitHub.</p>
+      <div class="clave-pie">
+        <button id="borrar-clave" class="btn-texto peligro" type="button" hidden>Borrar clave</button>
+        <button id="cerrar-clave" class="btn-texto" type="button">Cerrar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="aviso" class="aviso" role="status" aria-live="assertive" hidden></div>
+</body>
+</html>
