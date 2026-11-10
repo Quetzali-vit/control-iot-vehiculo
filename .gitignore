@@ -1,0 +1,9 @@
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
+
+# Nunca subir secretos
+.env
+*.key
