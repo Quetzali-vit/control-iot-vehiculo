@@ -2,7 +2,7 @@
 
 Aplicación web de **CONTROL** (práctica 4.1) para el vehículo IoT, con diseño de consola nocturna tipo gamepad. Tiene los tres indicadores de conexión, un panel de estado, dos joysticks táctiles (tracción a la izquierda; brazo y pala a la derecha), botones con el resto del catálogo real, un DETENER prioritario al centro, DEMO con cancelación, registro de acciones y navegación inferior. Consume la API FastAPI ya publicada en AWS (HTTPS y WSS) y se publica solo en **GitHub Pages**.
 
-- Página publicada: `https://quetzali-vit.github.io/control-iot/` (cambia `control-iot` si tu repositorio se llama distinto)
+- Página publicada: `https://quetzali-vit.github.io/control-iot-vehiculo/` 
 - API: `https://quetzali-iot.duckdns.org` · Swagger: `https://quetzali-iot.duckdns.org/docs`
 - WebSocket: `wss://quetzali-iot.duckdns.org/ws/vehiculos/1`
 
@@ -32,30 +32,34 @@ Cada acción pasa por tres etapas que la interfaz muestra por separado: **Solici
 ## Estructura del proyecto
 
 ```
-control-iot/
+control-iot-vehiculo/
 ├── index.html                 Estructura semántica, favicon, créditos al pie
-├── css/styles.css             Diseño Mobile First, horizontal, tableta y escritorio
-├── js/
-│   ├── app.js                 Arranque: crea y conecta los módulos
-│   ├── config.js              URL base, WSS, vehículo, mapeo del joystick, tiempos (sin secretos)
-│   ├── api/
-│   │   ├── cliente-http.js    Fetch único: encabezados, timeout, JSON, errores HTTP/red
-│   │   └── servicios.js       Rutas reales de la API usadas por CONTROL
-│   ├── ws/cliente-ws.js       Sesión WSS real con reconexión y latido ping/pong
-│   ├── estado/
-│   │   ├── store.js           Estado de la interfaz (suscripción a cambios)
-│   │   └── salud.js           Indicadores de API AWS y Amazon RDS
-│   ├── control/
-│   │   ├── comandos.js        Coordinador de comandos: cola, duplicados, prioridad DETENER
-│   │   ├── demo.js            Iniciar, cancelar y seguir la DEMO
-│   │   └── joystick.js        Joystick con Pointer Events y teclado
-│   ├── ui/                    Vista: indicadores, botones, DEMO, mensajes, clave
-│   └── utils/                 DOM seguro (textContent) y mensajes de error
-├── assets/                    favicon.svg, favicon-32.png, apple-touch-icon.png, fuentes Barlow (OFL)
-└── docs/
-    ├── PRUEBAS.md             Casos de prueba y verificación WebSocket con Postman
-    ├── CORS_BACKEND.md        Cómo habilitar CORS en la API
-    └── cors-backend.patch     Cambio exacto para el backend
+├── README.md
+├── .nojekyll                  GitHub Pages sirve los archivos tal cual
+└── assets/
+    ├── css/styles.css         Diseño de una sola pantalla (sin desplazamiento): celular, tableta y escritorio
+    ├── js/
+    │   ├── app.js             Arranque: crea y conecta los módulos
+    │   ├── config.js          URL base, WSS, vehículo, mapeo de los joysticks, tiempos (sin secretos)
+    │   ├── api/
+    │   │   ├── cliente-http.js  Fetch único: encabezados, timeout, JSON, errores HTTP/red
+    │   │   └── servicios.js     Rutas reales de la API usadas por CONTROL
+    │   ├── ws/cliente-ws.js   Sesión WSS real con reconexión y latido ping/pong
+    │   ├── estado/
+    │   │   ├── store.js       Estado de la interfaz (suscripción a cambios)
+    │   │   └── salud.js       Indicadores de API AWS y Amazon RDS
+    │   ├── control/
+    │   │   ├── comandos.js    Coordinador de comandos: cola, duplicados, prioridad DETENER
+    │   │   ├── demo.js        Iniciar, cancelar y seguir la DEMO
+    │   │   └── joystick.js    Joystick con Pointer Events y teclado
+    │   ├── ui/                Vista: indicadores, botones, DEMO, mensajes, clave
+    │   └── utils/             DOM seguro (textContent) y mensajes de error
+    ├── fonts/                 Barlow (OFL)
+    ├── docs/
+    │   ├── PRUEBAS.md         Casos de prueba y verificación WebSocket con Postman
+    │   ├── CORS_BACKEND.md    Cómo habilitar CORS en la API
+    │   └── cors-backend.patch Cambio exacto para el backend
+    └── favicon.svg, favicon-32.png, apple-touch-icon.png
 ```
 
 ## Contrato real de la API usado
@@ -72,12 +76,12 @@ control-iot/
 | Iniciar DEMO | `POST /vehiculos/{id}/demos/{id_demo}/ejecutar` | Sí | 202 |
 | Cancelar DEMO | `POST /vehiculos/{id}/demos/cancelar` | Sí | 200 |
 
-El joystick izquierdo usa `AVANZAR`, `RETROCEDER`, `GIRAR_IZQUIERDA` y `GIRAR_DERECHA`; el derecho usa `SUBIR_BRAZO`, `BAJAR_BRAZO`, `ABRIR_PALA` y `CERRAR_PALA`, y `DETENER` es el botón central (todos se buscan por nombre en el catálogo y se configuran en `js/config.js`). El resto de comandos del catálogo aparece como botones. Solo hay un movimiento a la vez, así que mientras un joystick o un botón está en uso, los demás controles se bloquean (DETENER nunca) y se liberan al soltar, al terminar el movimiento (~2 s) o al pulsar DETENER. El botón de LUZ se oculta con `COMANDOS_OCULTOS` en `js/config.js`. Cada movimiento se guarda en el historial con `origen = WEB-CONTROL`.
+El joystick izquierdo usa `AVANZAR`, `RETROCEDER`, `GIRAR_IZQUIERDA` y `GIRAR_DERECHA`; el derecho usa `SUBIR_BRAZO`, `BAJAR_BRAZO`, `ABRIR_PALA` y `CERRAR_PALA`, y `DETENER` es el botón central (todos se buscan por nombre en el catálogo y se configuran en `assets/js/config.js`). El resto de comandos del catálogo aparece como botones. El botón **Encender / apagar** alterna entre rojo (apagado) y verde (encendido) con una animación y un chip junto al estado; como el ESP32 también alterna, si se reinicia el vehículo la app puede quedar desfasada un toque. Solo hay un movimiento a la vez, así que mientras un joystick o un botón está en uso, los demás controles se bloquean (DETENER nunca) y se liberan al soltar, al terminar el movimiento (~2 s) o al pulsar DETENER. El botón de LUZ se oculta con `COMANDOS_OCULTOS` en `assets/js/config.js`. Cada movimiento se guarda en el historial con `origen = WEB-CONTROL`.
 
 ## Seguridad
 
 - **No hay secretos en el repositorio.** La `X-API-Key` la escribe el operador en «Clave». Vive en memoria y, si se marca la casilla, en `sessionStorage` de esa pestaña; se borra al cerrarla.
-- **CORS** se limita en el backend al origen `https://quetzali-vit.github.io` (ver `docs/CORS_BACKEND.md`). CORS no es autenticación: la protección sigue siendo la clave.
+- **CORS** se limita en el backend al origen `https://quetzali-vit.github.io` (ver `assets/docs/CORS_BACKEND.md`). CORS no es autenticación: la protección sigue siendo la clave.
 - HTTPS y WSS siempre, sin contenido mixto. Bootstrap e iconos se cargan con integridad SRI.
 - Los datos de la API se pintan con `textContent` (sin `innerHTML`), así que no hay inyección en el DOM.
 - El navegador nunca se conecta a MySQL/RDS; RDS solo se informa a través de `GET /salud`.
@@ -98,18 +102,18 @@ git init
 git add .
 git commit -m "feat: app de control IoT con joystick, DEMO e indicadores"
 git branch -M main
-git remote add origin https://github.com/Quetzali-vit/control-iot.git
+git remote add origin https://github.com/Quetzali-vit/control-iot-vehiculo.git
 git push -u origin main
 ```
 
-En GitHub: **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main` / `(root)` → Save**. Después de 1 o 2 minutos aparece la URL `https://quetzali-vit.github.io/control-iot/`. El archivo `.nojekyll` evita que GitHub procese los archivos. Todas las rutas son relativas, así que funcionan en la subruta.
+En GitHub: **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main` / `(root)` → Save**. Después de 1 o 2 minutos aparece la URL `https://quetzali-vit.github.io/control-iot-vehiculo/`. El archivo `.nojekyll` evita que GitHub procese los archivos. Todas las rutas son relativas, así que funcionan en la subruta.
 
 Commits sugeridos: estructura inicial · cliente REST · WebSocket e indicadores · joystick y botones · DEMO · estilos responsivos · README y pruebas.
 
 ## Personalización
 
 - **Créditos:** cambia «Tu nombre completo» en el `<footer>` de `index.html`.
-- **Vehículo:** `VEHICLE_ID` en `js/config.js`. El nombre que aparece arriba es el que tiene en la base de datos (`GET /vehiculos/{id}`).
+- **Vehículo:** `VEHICLE_ID` en `assets/js/config.js`. El nombre que aparece arriba es el que tiene en la base de datos (`GET /vehiculos/{id}`).
 
 ## Lista de verificación
 

@@ -43,7 +43,7 @@ El origen de GitHub Pages es solo `https://quetzali-vit.github.io`, sin la subru
 
 ## Aplicarlo
 
-1. En tu computadora, dentro del repositorio de la API: `git apply ruta/a/cors-backend.patch`, después `git commit` y `git push`.
+1. En tu computadora, dentro del repositorio de la API: `git apply ruta/a/assets/docs/cors-backend.patch`, después `git commit` y `git push`.
 2. En la instancia EC2: actualiza el código (`git pull`), agrega `CORS_ORIGINS` al `.env` y reinicia la API (el servicio o el proceso de `uvicorn` que uses).
 3. Comprueba desde cualquier terminal:
 

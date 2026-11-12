@@ -31,6 +31,8 @@ const TONOS = { ENCENDER_APAGAR: "verde", SONIDO: "cian", LUZ: "ambar" };
 // Funciones del control primero; después el resto por código
 const PRIORIDAD = ["ENCENDER_APAGAR", "SONIDO", "LUZ"];
 
+const NOMBRE_POTENCIA = "ENCENDER_APAGAR";
+
 const NOMBRES_JOYSTICK = new Set([
   ...Object.values(CONFIG.JOYSTICK),
   ...Object.values(CONFIG.JOYSTICK_BRAZO),
@@ -43,6 +45,24 @@ export function crearBotones(store, coordinador) {
   const vacio = $("#botones-vacio");
   let firma = "";
   let temporizadorLiberar = null;
+
+  // Animación al aceptar el comando: onda verde al encender, onda roja al apagar, pulso para el resto
+  function reiniciarAnimacion(boton, clase) {
+    boton.classList.remove("anim-on", "anim-off", "anim-sonido");
+    void boton.offsetWidth; // reinicia la animación aunque se repita
+    boton.classList.add(clase);
+    setTimeout(() => boton.classList.remove(clase), 900);
+  }
+
+  function animar(boton, comando) {
+    if (comando.nombre === NOMBRE_POTENCIA) {
+      const encendido = !store.get().encendido;
+      store.set({ encendido });
+      reiniciarAnimacion(boton, encendido ? "anim-on" : "anim-off");
+    } else {
+      reiniciarAnimacion(boton, "anim-sonido");
+    }
+  }
 
   async function pulsar(boton, comando) {
     if (boton.dataset.fase === "enviando") return;
@@ -57,6 +77,7 @@ export function crearBotones(store, coordinador) {
     }, CONFIG.MOVIMIENTO_VISUAL_MS);
     const resultado = await coordinador.solicitar(comando, "boton");
     boton.removeAttribute("aria-busy");
+    if (resultado.ok) animar(boton, comando);
     if (!resultado.ok && store.get().activo === dueno) {
       clearTimeout(temporizadorLiberar);
       store.set({ activo: null });
@@ -78,6 +99,7 @@ export function crearBotones(store, coordinador) {
     ]);
     boton.dataset.codigo = String(comando.codigo);
     boton.dataset.tono = TONOS[comando.nombre] ?? "violeta";
+    if (comando.nombre === NOMBRE_POTENCIA) boton.dataset.potencia = store.get().encendido ? "on" : "off";
     const nombre = ETIQUETAS[comando.nombre] ?? nombreLegible(comando.nombre);
     boton.title = `${nombre} (código ${comando.codigo})`;
     let ultimoToque = 0;
@@ -114,6 +136,11 @@ export function crearBotones(store, coordinador) {
       const esDueno = s.activo === `boton:${boton.dataset.codigo}`;
       boton.disabled = base || (s.activo !== null && !esDueno);
       boton.dataset.activo = esDueno ? "si" : "";
+      if (boton.dataset.potencia !== undefined) {
+        boton.dataset.potencia = s.encendido ? "on" : "off";
+        boton.setAttribute("aria-pressed", String(s.encendido));
+        boton.title = `Encender / apagar (${s.encendido ? "encendido" : "apagado"}, código ${boton.dataset.codigo})`;
+      }
     }
   }
 

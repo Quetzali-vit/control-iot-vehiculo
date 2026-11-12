@@ -139,6 +139,15 @@ const estadoGrande = $("#estado-grande");
 const ETAPAS = { en_cola: "en cola", solicitado: "solicitado", aceptado: "aceptado por API",
   superado: "superado por DETENER", descartado: "descartado", error: "error" };
 
+// Chip de energía junto al estado (sigue al botón encender / apagar)
+const chipEnergia = $("#chip-energia");
+store.subscribe((s) => {
+  const estado = s.encendido ? "on" : "off";
+  if (chipEnergia.dataset.estado === estado) return;
+  chipEnergia.dataset.estado = estado;
+  chipEnergia.querySelector("span").textContent = s.encendido ? "Encendido" : "Apagado";
+});
+
 let temporizadorEstado = null;
 function pintarEstado() {
   clearTimeout(temporizadorEstado);
