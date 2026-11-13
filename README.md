@@ -1,6 +1,6 @@
 # Control IoT · Retroexcavadora
 
-Aplicación web de **CONTROL** (práctica 4.1) para el vehículo IoT, con diseño de consola nocturna tipo gamepad. Tiene los tres indicadores de conexión, un panel de estado, dos joysticks táctiles (tracción a la izquierda; brazo y pala a la derecha), botones con el resto del catálogo real, un DETENER prioritario al centro, DEMO con cancelación, registro de acciones y navegación inferior. Consume la API FastAPI ya publicada en AWS (HTTPS y WSS) y se publica solo en **GitHub Pages**.
+Aplicación web de **CONTROL** (práctica 4.1) y **MONITOREO** (práctica 4.2) para el vehículo IoT, en un solo sitio y un solo repositorio, con diseño de consola nocturna tipo gamepad. CONTROL tiene los tres indicadores de conexión, un panel de estado, dos joysticks táctiles (tracción a la izquierda; brazo y pala a la derecha), botones con el resto del catálogo real, un DETENER prioritario al centro, DEMO con cancelación y registro de acciones. MONITOREO muestra el último movimiento reportado y los diez movimientos individuales persistidos en Amazon RDS, actualizados en tiempo real por WebSocket. Consume la API FastAPI ya publicada en AWS (HTTPS y WSS) y se publica solo en **GitHub Pages**.
 
 - Página publicada: `https://quetzali-vit.github.io/control-iot-vehiculo/` 
 - API: `https://quetzali-iot.duckdns.org` · Swagger: `https://quetzali-iot.duckdns.org/docs`
@@ -21,13 +21,32 @@ Aplicación web de **CONTROL** (práctica 4.1) para el vehículo IoT, con diseñ
    ▼                                                     ▼
  ws/cliente-ws.js ◄── WSS ──  API FastAPI en Amazon EC2 ──► Amazon RDS (vehiculo_iot, 21 SP)
    │  eventos: estado_actual, movimiento, demo_inicio, demo_movimiento, demo_fin, demo_cancelada, demo_error, pong
-   ▼
- estado/store.js ──► ui/*.js (indicadores, botones, DEMO, registro, avisos)
+   ├──────────────► monitoreo/monitor.js (4.2)
+   │                  │  evento «movimiento» ──► GET /estado + GET /historial?limite=10 (persistencia confirmada)
+   │                  │  eventos de DEMO ──────► solo la tarjeta; NO piden historial
+   ▼                  ▼
+ estado/store.js ──► ui/*.js (indicadores, botones, DEMO, registro, avisos, monitoreo)
 
  estado/salud.js ── GET / (servidor AWS) y GET /salud (diagnóstico de Amazon RDS) cada 20 s
 ```
 
 Cada acción pasa por tres etapas que la interfaz muestra por separado: **Solicitado** → **Aceptado por API (201/202)** → **Evento WS recibido**. Ninguna de ellas confirma que el motor se haya movido.
+
+## MONITOREO (práctica 4.2)
+
+Segunda vista del mismo sitio, accesible desde la navegación inferior (**Control · Monitoreo · Registro**). No sustituye nada de CONTROL: reutiliza el mismo cliente REST, **la misma conexión WebSocket** y los mismos tres indicadores.
+
+**Tarjeta de último movimiento.** Al abrir la aplicación se lee `GET /vehiculos/{id}/estado`; después cada evento WSS válido del mismo vehículo actualiza la tarjeta al instante, venga de CONTROL, de otra pestaña o de un cliente externo. La tarjeta dice de dónde vino el dato («Recibido por WebSocket» o «Leído de la API (REST)») y recuerda que es el **último estado reportado, no ejecución física confirmada**. Si no hay dato, muestra «Sin movimientos» y `—` en fecha y hora: nunca se inventan marcas temporales.
+
+**Tabla de diez movimientos.** Sale de `GET /vehiculos/{id}/historial?limite=10`, ordenada del más reciente al más antiguo por `id_historial`. Un evento WSS **no se inserta directamente**: dispara una nueva consulta al historial confirmado (agrupando eventos seguidos en una sola petición, `MONITOREO_RESINC_MS`), así que en pantalla solo hay registros que Amazon RDS ya guardó. El número de fila es visual; que una fila salga de la pantalla no borra nada de la base de datos. El pie indica el total real (`total_registrados`).
+
+**DEMO.** Los eventos `demo_movimiento` actualizan la tarjeta y se etiquetan como «paso de una DEMO: no entra al historial individual», pero **no** piden historial, porque el backend no los guarda como movimientos individuales. Comprobado: durante una DEMO completa la tabla no cambió.
+
+**Orden y duplicados.** Cada petición lleva un sello creciente y se descarta la respuesta que llegue tarde, de modo que un GET viejo nunca sobrescribe información más nueva. Entre REST y WSS gana la marca temporal más reciente y, en empate, el evento WSS. Las consultas al historial nunca se solapan: si llega otro evento mientras una está en curso, se repite al terminar.
+
+**Reconexión.** Cuando el WebSocket se recupera tras una caída, se vuelven a leer estado e historial por REST, porque pudieron perderse eventos. No hay polling del historial.
+
+**Fechas.** El backend entrega las marcas en UTC sin sufijo de zona (`2026-11-13T04:01:46`); `utils/fechas.js` las interpreta como UTC y las muestra en la hora local del navegador. Un campo ausente se pinta `—`.
 
 ## Estructura del proyecto
 
@@ -40,7 +59,7 @@ control-iot-vehiculo/
     ├── css/styles.css         Diseño de una sola pantalla (sin desplazamiento): celular, tableta y escritorio
     ├── js/
     │   ├── app.js             Arranque: crea y conecta los módulos
-    │   ├── config.js          URL base, WSS, vehículo, mapeo de los joysticks, tiempos (sin secretos)
+    │   ├── config.js          URL base, WSS, vehículo, mapeo de los joysticks, tiempos
     │   ├── api/
     │   │   ├── cliente-http.js  Fetch único: encabezados, timeout, JSON, errores HTTP/red
     │   │   └── servicios.js     Rutas reales de la API usadas por CONTROL
@@ -52,8 +71,10 @@ control-iot-vehiculo/
     │   │   ├── comandos.js    Coordinador de comandos: cola, duplicados, prioridad DETENER
     │   │   ├── demo.js        Iniciar, cancelar y seguir la DEMO
     │   │   └── joystick.js    Joystick con Pointer Events y teclado
-    │   ├── ui/                Vista: indicadores, botones, DEMO, mensajes, clave
-    │   └── utils/             DOM seguro (textContent) y mensajes de error
+    │   ├── monitoreo/
+    │   │   └── monitor.js     (4.2) Carga REST, resincronización por WSS, orden y duplicados
+    │   ├── ui/                Vista: indicadores, botones, DEMO, monitoreo, mensajes, clave
+    │   └── utils/             DOM seguro (textContent), fechas UTC→local y mensajes de error
     ├── fonts/                 Barlow (OFL)
     ├── docs/
     │   ├── PRUEBAS.md         Casos de prueba y verificación WebSocket con Postman
@@ -69,6 +90,8 @@ control-iot-vehiculo/
 | Salud del servidor AWS | `GET /` | No | `{"estado":"Online"}` |
 | Diagnóstico de Amazon RDS | `GET /salud` | No | 200 `{"mensaje"}` o 503 |
 | Vehículo | `GET /vehiculos/{id}` | No | `VehiculoDetalle` |
+| Último estado (4.2) | `GET /vehiculos/{id}/estado` | No | `EstadoRespuesta` |
+| Historial (4.2) | `GET /vehiculos/{id}/historial?limite=10` | No | `HistorialRespuesta` |
 | Catálogo | `GET /vehiculos/{id}/comandos` | No | lista de comandos |
 | DEMO guardadas | `GET /vehiculos/{id}/demos` | No | lista de DEMO |
 | ¿DEMO en curso? | `GET /vehiculos/{id}/demos/ejecucion` | No | `{"en_ejecucion"}` |
