@@ -165,7 +165,7 @@ main { min-height: 0; }
 .estado-sub [data-fase="evento"] { color: #b9f5d4; }
 .estado-sub [data-fase="error"] { color: #ffc0c6; }
 .estado-lado { display: flex; align-items: center; gap: 8px; flex: none; }
-.estado-carga { font-size: 0.74rem; color: var(--ambar); max-width: 30vw; }
+.estado-carga { font-size: 0.74rem; color: var(--ambar); max-width: 30vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .estado-carga[hidden] { display: none; }
 .btn-reintentar { min-height: 30px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--ambar); background: transparent; color: var(--ambar); font-weight: 600; font-size: 0.8rem; }
 .btn-reintentar[hidden] { display: none; }
@@ -184,6 +184,7 @@ main { min-height: 0; }
   border: 1px solid rgba(255, 59, 74, 0.5);
   color: #ffb3bb;
   background: rgba(255, 59, 74, 0.12);
+  white-space: nowrap;
   transition: color 250ms ease, background 250ms ease, border-color 250ms ease, box-shadow 250ms ease;
 }
 .chip-energia[data-estado="on"] { border-color: rgba(53, 224, 138, 0.6); color: #b9f5d4; background: rgba(53, 224, 138, 0.14); box-shadow: 0 0 16px rgba(53, 224, 138, 0.3); }
@@ -229,9 +230,8 @@ main { min-height: 0; }
     --tecla: clamp(36px, min(6.5cqw, 14cqh), 64px);
     --stick: clamp(96px, min(30cqw, calc(100cqh - 48px)), 420px);
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
     grid-template-areas:
-      "izq .     der"
       "izq paro  der"
       "izq botones der"
       "izq demo  der";
@@ -244,10 +244,21 @@ main { min-height: 0; }
   .zona-botones, .zona-demo { max-width: 460px; }
 }
 
-/* Celular de lado: la columna central es muy baja, se compacta un poco más */
-@container (min-aspect-ratio: 5/4) and (max-height: 260px) {
-  .mando { --gap: 5px; --paro: 58px; --tecla: 33px; }
+/* Celular de lado: joysticks a todo el alto disponible y columna central compacta */
+@container (min-aspect-ratio: 5/4) and (max-height: 300px) {
+  .mando {
+    --gap: 5px;
+    --stick: min(36cqw, 97cqh);
+    --paro: clamp(58px, 32cqh, 96px);
+    --tecla: clamp(34px, 17cqh, 48px);
+    column-gap: clamp(8px, 2.5cqw, 28px);
+  }
   .redondo-codigo { min-width: 15px; height: 15px; font-size: 0.52rem; }
+  .zona-demo { padding: 4px 6px; border-radius: 12px; }
+  .demo-fila { gap: 6px; }
+  .demo-fila .form-select, .btn-demo { min-height: 34px; font-size: 0.84rem; }
+  .btn-demo { width: 40px; min-width: 40px; }
+  .demo-avance { margin-top: 3px; min-height: 10px; }
 }
 
 /* ----- Joystick ----- */
@@ -433,6 +444,16 @@ body:not([data-vista="control"]) .detener-flotante { display: inline-flex; }
 }
 .boton-comando.anim-sonido::after { animation: onda-sale 0.7s ease-out; }
 
+/* Sonido: el carrito suena desde que se enciende; el botón alterna sonando / silenciado */
+.boton-comando[data-sonido="off"] { --tono: var(--apagado); }
+.boton-comando[data-sonido="on"] {
+  --tono: var(--cian);
+  border-color: rgba(60, 214, 255, 0.8);
+  box-shadow: 0 0 22px rgba(60, 214, 255, 0.45), 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 -4px 8px rgba(0, 0, 0, 0.45);
+  animation: respira-cian 2.4s ease-in-out infinite;
+}
+@keyframes respira-cian { 50% { box-shadow: 0 0 32px rgba(60, 214, 255, 0.75), 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 -4px 8px rgba(0, 0, 0, 0.45); } }
+
 /* Encender / apagar: apagado = rojo, encendido = verde con respiración */
 .boton-comando[data-potencia="off"] { --tono: var(--rojo); }
 .boton-comando[data-potencia="on"] {
@@ -448,7 +469,7 @@ body:not([data-vista="control"]) .detener-flotante { display: inline-flex; }
 
 @keyframes onda-sale { 0% { opacity: 0.9; transform: scale(1); } 100% { opacity: 0; transform: scale(2); } }
 @keyframes onda-entra { 0% { opacity: 0; transform: scale(2); } 40% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1); } }
-@keyframes icono-enciende { 0% { transform: scale(0.6); filter: brightness(0.4); } 55% { transform: scale(1.35); filter: brightness(1.8) drop-shadow(0 0 14px var(--ok)); } 100% { transform: scale(1); } }
+@keyframes icono-enciende { 0% { transform: scale(0.6); filter: brightness(0.4); } 55% { transform: scale(1.35); filter: brightness(1.8) drop-shadow(0 0 14px var(--tono)); } 100% { transform: scale(1); } }
 @keyframes icono-apaga { 0% { transform: scale(1); } 30% { opacity: 1; filter: brightness(2); } 55% { opacity: 0.25; } 70% { opacity: 0.9; } 100% { transform: scale(0.85); opacity: 1; } }
 @keyframes respira { 50% { box-shadow: 0 0 34px rgba(53, 224, 138, 0.8), 0 6px 14px rgba(0, 0, 0, 0.55), inset 0 -4px 8px rgba(0, 0, 0, 0.45); } }
 
@@ -527,13 +548,13 @@ body:not([data-vista="control"]) .detener-flotante { display: inline-flex; }
 /* ----- Navegación inferior ----- */
 .nav {
   z-index: 50;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background: rgba(7, 10, 18, 0.9);
   border-top: 1px solid var(--borde);
 }
-.nav-item { display: grid; place-items: center; align-content: center; gap: 1px; min-height: var(--nav-alto); border: 0; background: transparent; color: var(--suave); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; }
+.nav-item { flex: 1 1 0; display: grid; place-items: center; align-content: center; gap: 1px; min-height: var(--nav-alto); border: 0; background: transparent; color: var(--suave); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; }
+.nav-item[hidden] { display: none; }
 .nav-item .bi { font-size: 1.25rem; line-height: 1; }
 .nav-item[aria-current="page"] { color: var(--texto); }
 .nav-item[aria-current="page"] .bi { color: var(--ambar); filter: drop-shadow(0 0 8px rgba(255, 184, 28, 0.6)); }
@@ -601,6 +622,12 @@ body:not([data-vista="control"]) .detener-flotante { display: inline-flex; }
   .nav { width: min(440px, 100%); justify-self: center; margin-bottom: 6px; border: 1px solid var(--borde); border-radius: 22px; }
 }
 
+/* Celular angosto: el chip de energía se hace más discreto para no recortarse */
+@media (max-width: 480px) {
+  .chip-energia { font-size: 0.66rem; padding: 4px 9px; gap: 4px; }
+  .estado-panel { gap: 8px; padding-inline: 12px; }
+}
+
 /* Pantallas bajas (celular chico, laptop con barras del navegador): se compacta todo */
 @media (max-height: 700px) {
   :root { --nav-alto: 50px; }
@@ -626,6 +653,7 @@ body:not([data-vista="control"]) .detener-flotante { display: inline-flex; }
   #vista-control { gap: 5px; }
   .estado-panel { padding: 3px 12px; border-radius: 12px; }
   .estado-grande { font-size: 1.3rem; }
+  .chip-energia { font-size: 0.64rem; padding: 3px 8px; }
   .joy-lectura { display: none; }
   .nav-item { grid-auto-flow: column; gap: 8px; font-size: 0.7rem; }
   .nav-item .bi { font-size: 1rem; }

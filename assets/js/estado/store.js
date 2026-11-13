@@ -25,6 +25,7 @@ export const ESTADO_INICIAL = Object.freeze({
   demoActiva: null,          // {id, nombre, paso, total, comando, fase}
   hayClave: false,
   encendido: false,          // el botón ENCENDER_APAGAR alterna este valor (el ESP32 también alterna)
+  sonido: true,              // el carrito suena desde que se enciende; el botón SONIDO lo alterna
   activo: null,              // control en uso: "traccion" | "brazo" | "boton:<codigo>" | null (todo libre)
 
   ws: "conectando",          // en_linea | conectando | reconectando | desconectado

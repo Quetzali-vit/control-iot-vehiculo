@@ -32,6 +32,7 @@ const TONOS = { ENCENDER_APAGAR: "verde", SONIDO: "cian", LUZ: "ambar" };
 const PRIORIDAD = ["ENCENDER_APAGAR", "SONIDO", "LUZ"];
 
 const NOMBRE_POTENCIA = "ENCENDER_APAGAR";
+const NOMBRE_SONIDO = "SONIDO";
 
 const NOMBRES_JOYSTICK = new Set([
   ...Object.values(CONFIG.JOYSTICK),
@@ -57,8 +58,13 @@ export function crearBotones(store, coordinador) {
   function animar(boton, comando) {
     if (comando.nombre === NOMBRE_POTENCIA) {
       const encendido = !store.get().encendido;
-      store.set({ encendido });
+      // Al encender, el carrito arranca sonando, así que el sonido vuelve a "encendido"
+      store.set({ encendido, sonido: true });
       reiniciarAnimacion(boton, encendido ? "anim-on" : "anim-off");
+    } else if (comando.nombre === NOMBRE_SONIDO) {
+      const sonido = !store.get().sonido;
+      store.set({ sonido });
+      reiniciarAnimacion(boton, sonido ? "anim-on" : "anim-off");
     } else {
       reiniciarAnimacion(boton, "anim-sonido");
     }
@@ -100,6 +106,7 @@ export function crearBotones(store, coordinador) {
     boton.dataset.codigo = String(comando.codigo);
     boton.dataset.tono = TONOS[comando.nombre] ?? "violeta";
     if (comando.nombre === NOMBRE_POTENCIA) boton.dataset.potencia = store.get().encendido ? "on" : "off";
+    if (comando.nombre === NOMBRE_SONIDO) boton.dataset.sonido = "off";
     const nombre = ETIQUETAS[comando.nombre] ?? nombreLegible(comando.nombre);
     boton.title = `${nombre} (código ${comando.codigo})`;
     let ultimoToque = 0;
@@ -140,6 +147,15 @@ export function crearBotones(store, coordinador) {
         boton.dataset.potencia = s.encendido ? "on" : "off";
         boton.setAttribute("aria-pressed", String(s.encendido));
         boton.title = `Encender / apagar (${s.encendido ? "encendido" : "apagado"}, código ${boton.dataset.codigo})`;
+      }
+      if (boton.dataset.sonido !== undefined) {
+        const sonando = s.encendido && s.sonido;
+        boton.dataset.sonido = sonando ? "on" : "off";
+        boton.setAttribute("aria-pressed", String(sonando));
+        const iconoSonido = boton.querySelector(".redondo-cuerpo .bi");
+        if (iconoSonido) iconoSonido.className = `bi ${sonando ? "bi-volume-up-fill" : "bi-volume-mute-fill"}`;
+        const detalle = sonando ? "sonando" : (s.encendido ? "silenciado" : "vehículo apagado");
+        boton.title = `Sonido (${detalle}, código ${boton.dataset.codigo})`;
       }
     }
   }

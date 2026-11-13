@@ -138,6 +138,8 @@ const ultimaAccion = $("#ultima-accion");
 const estadoGrande = $("#estado-grande");
 const ETAPAS = { en_cola: "en cola", solicitado: "solicitado", aceptado: "aceptado por API",
   superado: "superado por DETENER", descartado: "descartado", error: "error" };
+// Comandos de función: no mueven el carrito, así que no cambian la palabra grande de estado
+const COMANDOS_FUNCION = new Set(["ENCENDER_APAGAR", "SONIDO", "LUZ"]);
 
 // Chip de energía junto al estado (sigue al botón encender / apagar)
 const chipEnergia = $("#chip-energia");
@@ -174,7 +176,8 @@ function pintarEstado() {
   } else if (r && r.fase === "error") {
     texto = "Error";
     tono = "error";
-  } else if (r && r.nombre !== CONFIG.COMANDO_DETENER && ["solicitado", "aceptado", "en_cola"].includes(r.fase)
+  } else if (r && r.nombre !== CONFIG.COMANDO_DETENER && !COMANDOS_FUNCION.has(r.nombre)
+             && ["solicitado", "aceptado", "en_cola"].includes(r.fase)
              && edad < CONFIG.MOVIMIENTO_VISUAL_MS) {
     texto = nombreLegible(r.nombre);
     tono = "mueve";

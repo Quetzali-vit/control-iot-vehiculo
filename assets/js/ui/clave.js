@@ -1,5 +1,8 @@
-// Clave de control (X-API-Key) escrita por el operador.
-// Nunca va en el repositorio: vive en memoria y, si se elige, en sessionStorage de esta pestaña.
+// Clave de control (X-API-Key).
+// Si CONFIG.API_KEY tiene valor, se usa esa y la pestaña «Clave» se oculta.
+// Si está vacía, la escribe el operador: vive en memoria y, si se elige,
+// en sessionStorage de esta pestaña.
+import { CONFIG } from "../config.js";
 import { $ } from "../utils/dom.js";
 
 const LLAVE_SESION = "control-iot:clave";
@@ -32,10 +35,12 @@ export function crearClave(store) {
   const cerrarBoton = $("#cerrar-clave");
   const nota = $("#clave-nota");
 
-  let clave = leerSesion();
+  const claveFija = (CONFIG.API_KEY ?? "").trim();
+  let clave = claveFija || leerSesion();
 
   function actualizar() {
     store.set({ hayClave: Boolean(clave) });
+    boton.hidden = Boolean(claveFija);
     boton.dataset.estado = clave ? "lista" : "falta";
     boton.querySelector(".clave-texto").textContent = clave ? "Clave lista" : "Clave";
     borrar.hidden = !clave;
@@ -43,9 +48,14 @@ export function crearClave(store) {
 
   function abrir(mensaje = "", invalida = false) {
     if (invalida) {
+      // Si la clave fija del código fue rechazada, se permite escribir otra a mano
       clave = "";
       guardarSesion("");
-      actualizar();
+      boton.hidden = false;
+      boton.dataset.estado = "falta";
+      boton.querySelector(".clave-texto").textContent = "Clave";
+      borrar.hidden = true;
+      store.set({ hayClave: false });
     }
     if (!panel.open) panel.showModal();
     nota.textContent = mensaje || "La clave se usa solo para mover, iniciar o cancelar. No se guarda en GitHub.";

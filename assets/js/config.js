@@ -1,7 +1,12 @@
 // Configuración pública de la aplicación de control.
-// Aquí NO va ninguna clave: la X-API-Key la escribe el operador en pantalla.
 
 export const CONFIG = Object.freeze({
+  // X-API-Key escrita directamente (decisión del operador, 2026-11-12).
+  // ATENCIÓN: este repositorio es público, así que cualquiera que lea este archivo
+  // puede controlar el vehículo. Si se filtra o hay abuso, cambia la clave en el
+  // backend y actualízala aquí. Déjala en "" para que la página la pida en «Clave».
+  API_KEY: "",
+
   // API existente en AWS (FastAPI detrás de Caddy, HTTPS)
   API_BASE_URL: "https://quetzali-iot.duckdns.org",
 
