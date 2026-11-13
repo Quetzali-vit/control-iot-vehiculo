@@ -80,7 +80,7 @@ El joystick izquierdo usa `AVANZAR`, `RETROCEDER`, `GIRAR_IZQUIERDA` y `GIRAR_DE
 
 ## Seguridad
 
-- **No hay secretos en el repositorio.** La `X-API-Key` la escribe el operador en «Clave». Vive en memoria y, si se marca la casilla, en `sessionStorage` de esa pestaña; se borra al cerrarla.
+- **La `X-API-Key` está escrita en `assets/js/config.js`** (decisión del operador para no escribirla en cada dispositivo). Como el repositorio es público, cualquiera que lea ese archivo puede controlar el vehículo: si hay abuso, cambia la clave en el backend y actualízala ahí. Si `API_KEY` se deja vacía, la página vuelve a pedirla en «Clave» (memoria y, opcionalmente, `sessionStorage` de esa pestaña).
 - **CORS** se limita en el backend al origen `https://quetzali-vit.github.io` (ver `assets/docs/CORS_BACKEND.md`). CORS no es autenticación: la protección sigue siendo la clave.
 - HTTPS y WSS siempre, sin contenido mixto. Bootstrap e iconos se cargan con integridad SRI.
 - Los datos de la API se pintan con `textContent` (sin `innerHTML`), así que no hay inyección en el DOM.
