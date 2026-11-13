@@ -545,6 +545,131 @@ body:not([data-vista="control"]) .detener-flotante { display: inline-flex; }
 .bitacora-nota { flex: none; font-size: 0.74rem; color: var(--suave); }
 .bitacora .vacio { flex: none; }
 
+/* =========================================================================
+   MONITOREO (práctica 4.2): tarjeta de último movimiento y tabla de diez
+   ========================================================================= */
+.monitoreo { min-height: 0; overflow: hidden; }
+.monitoreo[hidden] { display: none; }
+.mon-caja {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 8px;
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+.mon-encabezado { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.mon-encabezado h2 { font-size: 1.15rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.mon-vehiculo { font-size: 0.82rem; color: var(--suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ----- Tarjeta destacada ----- */
+.mon-tarjeta {
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--borde);
+  border-left: 5px solid var(--apagado);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  display: grid;
+  gap: 8px;
+  transition: border-color 250ms ease, box-shadow 250ms ease;
+}
+.mon-tarjeta[data-estado="activo"] { border-left-color: var(--cian); box-shadow: 0 0 26px rgba(60, 214, 255, 0.16); }
+.mon-tarjeta[data-estado="detenido"] { border-left-color: var(--rojo); }
+.mon-tarjeta[data-estado="error"] { border-left-color: var(--falla); }
+.mon-tarjeta-et { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--suave); font-weight: 600; }
+.mon-tarjeta-cuerpo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+#mon-icono {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 1.5rem;
+  color: var(--cian);
+  background: rgba(60, 214, 255, 0.1);
+  border: 1px solid rgba(60, 214, 255, 0.28);
+}
+.mon-tarjeta[data-estado="detenido"] #mon-icono { color: var(--rojo); background: rgba(255, 59, 74, 0.1); border-color: rgba(255, 59, 74, 0.3); }
+.mon-tarjeta[data-estado="vacio"] #mon-icono,
+.mon-tarjeta[data-estado="cargando"] #mon-icono { color: var(--suave); background: var(--vidrio); border-color: var(--borde); }
+.mon-tarjeta-texto { min-width: 0; }
+.mon-movimiento {
+  font-family: var(--f-titulo);
+  font-weight: 700;
+  font-size: clamp(1.3rem, 5.4vw, 1.9rem);
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mon-codigo { font-size: 0.74rem; color: var(--suave); }
+.mon-codigo[hidden] { display: none; }
+.mon-tiempo { display: grid; gap: 2px; margin: 0; text-align: right; flex: none; }
+.mon-tiempo > div { display: grid; grid-template-columns: auto auto; gap: 6px; align-items: baseline; justify-content: end; }
+.mon-tiempo dt { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--suave); }
+.mon-tiempo dd { margin: 0; font-size: 0.92rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mon-nota { font-size: 0.7rem; color: var(--suave); line-height: 1.3; }
+
+/* ----- Tabla de diez movimientos ----- */
+.mon-historial { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 6px; }
+.mon-historial-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.mon-historial-top h3 { margin: 0; font-family: var(--f-titulo); font-weight: 700; font-size: 1rem; letter-spacing: 0.12em; text-transform: uppercase; }
+.mon-total { font-size: 0.72rem; color: var(--suave); white-space: nowrap; }
+.mon-tabla-caja { min-height: 0; overflow: auto; border-radius: 14px; border: 1px solid var(--borde); background: var(--vidrio); overscroll-behavior: contain; }
+.mon-tabla { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+.mon-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--suave);
+  background: #121a2e;
+  border-bottom: 1px solid var(--borde);
+  white-space: nowrap;
+}
+.mon-tabla td { padding: 7px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); vertical-align: middle; }
+.mon-tabla tbody tr:last-child td { border-bottom: 0; }
+.mon-tabla tbody tr:nth-child(odd) { background: rgba(255, 255, 255, 0.018); }
+.mon-tabla tbody tr:first-child { background: rgba(60, 214, 255, 0.07); }
+.mon-num { width: 2.4em; color: var(--suave); font-variant-numeric: tabular-nums; text-align: right; }
+.mon-mov { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.mon-mov .bi { color: var(--cian); flex: none; font-size: 0.95rem; }
+.mon-mov > span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mon-cod { flex: none; padding: 0 6px; border-radius: 6px; background: var(--vidrio-alto); color: var(--suave); font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+.mon-tabla td:nth-child(3), .mon-hora { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--texto); }
+.mon-tabla-estado { padding: 14px 12px; text-align: center; font-size: 0.84rem; color: var(--suave); }
+.mon-tabla-estado[hidden] { display: none; }
+.mon-tabla-estado[data-tipo="error"] { color: #ffc0c6; }
+.mon-nota-pie { font-size: 0.68rem; color: var(--suave); line-height: 1.3; }
+
+/* Celular angosto: la tarjeta pasa a dos filas y la tabla aprieta columnas */
+@media (max-width: 420px) {
+  .mon-tarjeta-cuerpo { grid-template-columns: auto minmax(0, 1fr); }
+  .mon-tiempo { grid-column: 1 / -1; text-align: left; }
+  .mon-tiempo > div { justify-content: start; }
+  .mon-tabla { font-size: 0.8rem; }
+  .mon-tabla thead th, .mon-tabla td { padding: 6px 7px; }
+  .mon-tabla td:nth-child(3) { font-size: 0.74rem; }
+}
+
+/* Celular de lado: tarjeta y tabla lado a lado para aprovechar el ancho */
+@media (orientation: landscape) and (max-height: 520px) {
+  .mon-caja { grid-template-rows: auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 8px; max-width: none; }
+  .mon-encabezado { grid-column: 1 / -1; }
+  .mon-tarjeta { align-content: start; }
+  .mon-movimiento { font-size: 1.25rem; }
+  .mon-tabla thead th, .mon-tabla td { padding: 4px 8px; }
+  .mon-nota-pie { display: none; }
+}
+
 /* ----- Navegación inferior ----- */
 .nav {
   z-index: 50;

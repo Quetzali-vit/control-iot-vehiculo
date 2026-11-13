@@ -7,7 +7,9 @@ import { crearClienteWs } from "./ws/cliente-ws.js";
 import { crearCoordinador } from "./control/comandos.js";
 import { crearControlDemo } from "./control/demo.js";
 import { crearJoystick, TECLAS_TRACCION, TECLAS_BRAZO } from "./control/joystick.js";
+import { crearMonitor } from "./monitoreo/monitor.js";
 import { crearIndicadores } from "./ui/indicadores.js";
+import { crearVistaMonitoreo } from "./ui/monitoreo.js";
 import { crearBotones } from "./ui/botones.js";
 import { crearPanelDemo } from "./ui/demo.js";
 import { crearMensajes } from "./ui/mensajes.js";
@@ -23,6 +25,8 @@ const deps = { servicios, store, obtenerClave: clave.obtener, pedirClave: clave.
 const coordinador = crearCoordinador(deps);
 const controlDemo = crearControlDemo(deps);
 const salud = crearMonitorSalud({ servicios, store });
+// MONITOREO (4.2): comparte el mismo WebSocket y el mismo cliente REST que CONTROL
+const monitor = crearMonitor({ servicios, store, avisar });
 
 // ----- WebSocket del navegador -----
 const ws = crearClienteWs({
@@ -30,13 +34,18 @@ const ws = crearClienteWs({
     const anterior = store.get().ws;
     store.set({ ws: estado, wsDetalle: detalle });
     // Al recuperar la sesión se sincroniza la DEMO por si hubo eventos perdidos
-    if (estado === "en_linea" && anterior !== "en_linea" && store.get().catalogoListo) controlDemo.sincronizar();
+    if (estado === "en_linea" && anterior !== "en_linea" && store.get().catalogoListo) {
+      controlDemo.sincronizar();
+      // Reconexión: se vuelve a leer estado e historial por REST (pudieron perderse eventos)
+      if (anterior === "desconectado" || anterior === "reconectando") monitor.onReconexionWs();
+    }
   },
   onMensaje: (mensaje) => {
     if (mensaje.id_vehiculo !== undefined && mensaje.id_vehiculo !== CONFIG.VEHICLE_ID) return;
     if (mensaje.evento !== "pong") store.set({ ultimoEvento: mensaje });
     coordinador.registrarEventoWs(mensaje);
     controlDemo.onEventoWs(mensaje);
+    monitor.onEventoWs(mensaje);
     if (mensaje.evento === "error" && typeof mensaje.mensaje === "string") avisar(`WebSocket: ${mensaje.mensaje}`, "error");
   },
 });
@@ -47,6 +56,7 @@ crearIndicadores(store, {
 });
 crearBotones(store, coordinador);
 crearPanelDemo(store, controlDemo);
+crearVistaMonitoreo(store);
 
 // ----- Joysticks (tracción a la izquierda, brazo y pala a la derecha) -----
 // Solo hay un movimiento a la vez: el último que se pide gana. Al soltar un joystick
@@ -119,7 +129,7 @@ document.addEventListener("keydown", (evento) => {
   if (evento.key === "Escape" && !evento.repeat && !evento.target.closest?.("input")) pedirDetener("teclado");
 });
 
-// ----- Navegación inferior: Control / Registro -----
+// ----- Navegación inferior: Control / Monitoreo / Registro -----
 function mostrarVista(nombre) {
   document.body.dataset.vista = nombre;
   for (const vista of document.querySelectorAll(".vista")) vista.hidden = vista.id !== `vista-${nombre}`;
@@ -219,6 +229,8 @@ async function cargarDatos() {
     store.set({ catalogo: comandos.value.filter((c) => c.activo !== false), catalogoListo: true });
     estadoCarga.hidden = true;
     controlDemo.sincronizar();
+    // MONITOREO: carga inicial por REST del último estado y de los diez movimientos
+    monitor.sincronizar({ motivo: "carga" });
   } else {
     estadoCarga.textContent = `No se pudo cargar el catálogo: ${mensajeDeError(comandos.reason)}`;
     reintentar.hidden = false;

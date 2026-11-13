@@ -32,6 +32,28 @@ export const servicios = {
     return datos;
   },
 
+  /** GET /vehiculos/{id}/estado → EstadoRespuesta: último estado reportado del vehículo */
+  async ultimoEstado({ signal } = {}) {
+    const { datos } = await solicitar(RUTAS.estado(ID), { signal });
+    exigir(datos && datos.id_vehiculo === ID, "Respuesta de estado no válida");
+    return datos;
+  },
+
+  /** GET /vehiculos/{id}/historial?limite=10 → los 10 movimientos individuales persistidos más recientes */
+  async historial({ signal } = {}) {
+    const { datos } = await solicitar(`${RUTAS.historial(ID)}?limite=10`, { signal });
+    exigir(datos && esLista(datos.movimientos), "Respuesta de historial no válida");
+    const movimientos = datos.movimientos
+      .filter((m) => m && Number.isInteger(m.id_historial) && m.id_vehiculo === ID
+        && typeof m.fecha_hora === "string")
+      .sort((a, b) => b.id_historial - a.id_historial) // del más reciente al más antiguo
+      .slice(0, 10);
+    return {
+      movimientos,
+      total: Number.isInteger(datos.total_registrados) ? datos.total_registrados : null,
+    };
+  },
+
   /** GET /vehiculos/{id}/comandos → catálogo ordenado por código */
   async comandos() {
     const { datos } = await solicitar(RUTAS.comandos(ID));

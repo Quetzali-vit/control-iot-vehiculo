@@ -51,6 +51,7 @@ export const CONFIG = Object.freeze({
   CORRELACION_WS_MS: 15000,       // ventana para relacionar respuesta HTTP con evento WS
   MOVIMIENTO_VISUAL_MS: 2200,     // cuánto se muestra un movimiento como activo (el ESP32 lo ejecuta ~2 s)
   REGISTRO_MAX: 6,                // acciones visibles en "Registro"
+  MONITOREO_RESINC_MS: 450,       // espera tras un evento WSS antes de pedir el historial persistido
 });
 
 // Rutas reales de la API (tomadas de Swagger /openapi.json). No inventar otras.
@@ -58,6 +59,8 @@ export const RUTAS = Object.freeze({
   servicio: () => "/",
   salud: () => "/salud",
   vehiculo: (id) => `/vehiculos/${id}`,
+  estado: (id) => `/vehiculos/${id}/estado`,
+  historial: (id) => `/vehiculos/${id}/historial`,
   comandos: (id) => `/vehiculos/${id}/comandos`,
   movimientos: (id) => `/vehiculos/${id}/movimientos`,
   demos: (id) => `/vehiculos/${id}/demos`,

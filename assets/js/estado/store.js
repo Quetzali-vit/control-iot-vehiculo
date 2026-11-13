@@ -37,4 +37,15 @@ export const ESTADO_INICIAL = Object.freeze({
 
   acciones: [],              // registro de acciones (más reciente primero)
   ultimoEvento: null,        // último mensaje WebSocket recibido
+
+  // ----- MONITOREO (práctica 4.2) -----
+  ultimoMovimiento: null,    // {comando, codigo, fecha, conectado, vehiculo, origen:"rest"|"wss", esDemo?}
+  estadoCargando: false,
+  estadoError: "",
+  historial: [],             // hasta 10 HistorialItem persistidos, del más reciente al más antiguo
+  historialTotal: null,      // total_registrados que informa la API
+  historialListo: false,
+  historialCargando: false,
+  historialError: "",
+  monitoreoSincronizado: "", // "carga" | "reconexion": por qué se consultó la última vez
 });

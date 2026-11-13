@@ -150,6 +150,62 @@
         </div>
       </section>
 
+      <!-- ================= Vista: MONITOREO (práctica 4.2) ================= -->
+      <section id="vista-monitoreo" class="vista monitoreo" aria-labelledby="t-monitoreo" hidden>
+        <div class="mon-caja">
+          <header class="mon-encabezado">
+            <h2 id="t-monitoreo">Monitoreo en tiempo real</h2>
+            <p id="mon-vehiculo" class="mon-vehiculo">—</p>
+          </header>
+
+          <!-- Tarjeta destacada: último movimiento o estado reportado -->
+          <article class="mon-tarjeta" id="mon-tarjeta" data-estado="vacio" aria-live="polite">
+            <p class="mon-tarjeta-et">Último movimiento reportado</p>
+            <div class="mon-tarjeta-cuerpo">
+              <i id="mon-icono" class="bi bi-dash-circle" aria-hidden="true"></i>
+              <div class="mon-tarjeta-texto">
+                <p id="mon-movimiento" class="mon-movimiento">Cargando…</p>
+                <p id="mon-codigo" class="mon-codigo" hidden></p>
+              </div>
+              <dl class="mon-tiempo">
+                <div><dt>Fecha</dt><dd id="mon-fecha">—</dd></div>
+                <div><dt>Hora</dt><dd id="mon-hora">—</dd></div>
+              </dl>
+            </div>
+            <p id="mon-nota" class="mon-nota"></p>
+          </article>
+
+          <!-- Tabla: diez movimientos individuales persistidos en Amazon RDS -->
+          <section class="mon-historial" aria-labelledby="t-historial">
+            <div class="mon-historial-top">
+              <h3 id="t-historial">Últimos 10 movimientos</h3>
+              <p id="mon-total" class="mon-total">—</p>
+            </div>
+            <div class="mon-tabla-caja">
+              <table class="mon-tabla" aria-describedby="mon-tabla-nota">
+                <caption class="visually-hidden">
+                  Movimientos individuales persistidos en Amazon RDS, del más reciente al más antiguo.
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col" class="mon-num">#</th>
+                    <th scope="col">Movimiento</th>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Hora</th>
+                  </tr>
+                </thead>
+                <tbody id="mon-tabla-cuerpo"></tbody>
+              </table>
+              <p id="mon-tabla-estado" class="mon-tabla-estado">Cargando movimientos…</p>
+            </div>
+            <p id="mon-tabla-nota" class="mon-nota-pie">
+              El número de fila es solo visual. Los pasos internos de una DEMO no se guardan como
+              movimientos individuales, así que no aparecen aquí.
+            </p>
+          </section>
+        </div>
+      </section>
+
       <!-- ================= Vista: REGISTRO ================= -->
       <section id="vista-registro" class="vista bitacora" aria-labelledby="t-registro" hidden>
         <h2 id="t-registro">Registro de acciones</h2>
@@ -173,6 +229,9 @@
   <nav class="nav" aria-label="Secciones">
     <button class="nav-item" type="button" data-ir="control" aria-current="page">
       <i class="bi bi-controller" aria-hidden="true"></i><span>Control</span>
+    </button>
+    <button class="nav-item" type="button" data-ir="monitoreo">
+      <i class="bi bi-activity" aria-hidden="true"></i><span>Monitoreo</span>
     </button>
     <button class="nav-item" type="button" data-ir="registro">
       <i class="bi bi-journal-text" aria-hidden="true"></i><span>Registro</span>
