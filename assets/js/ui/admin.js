@@ -153,7 +153,11 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
         crear("td", {}, [crear("strong", { texto: u.nombre }), crear("small", { clase: "d-block nota-suave", texto: u.modelo || "Sin modelo" })]),
         crear("td", { texto: u.numero_serie || "—" }),
         crear("td", {}, [crear("span", { clase: `estado-com e-${u.estado_comercial.toLowerCase()}`, texto: ESTADO_TEXTO[u.estado_comercial] || u.estado_comercial })]),
-        crear("td", { texto: u.propietario ? `${u.propietario}` : "—" }),
+        crear("td", {}, [
+          crear("span", { texto: u.propietario ? `${u.propietario}` : "—" }),
+          ...(u.id_propietario ? [crear("small", { clase: `d-block soporte-chip ${u.soporte_segundos > 0 ? "si" : ""}`,
+            texto: u.soporte_segundos > 0 ? `Soporte autorizado · ${Math.ceil(u.soporte_segundos / 60)} min` : "Sin soporte: solo monitoreo" })] : []),
+        ]),
       ];
       if (!compacta) {
         // Cambiar estado comercial
@@ -178,10 +182,11 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
           alCambiarInventario?.();
         }, ["unidades"], () => { asig.value = u.id_propietario ? String(u.id_propietario) : ""; }));
 
-        const usar = crear("button", { clase: "btn-icono", atributos: { type: "button", title: u.id_propietario ? "Vendida: solo monitoreo" : "Usar en CONTROL", "aria-label": `Usar ${u.nombre} en Control` } }, [icono(u.id_propietario ? "bi-eye" : "bi-joystick")]);
+        const operable = !u.id_propietario || u.soporte_segundos > 0;
+        const usar = crear("button", { clase: "btn-icono", atributos: { type: "button", title: operable ? "Usar en CONTROL" : "Vendida sin soporte: solo monitoreo", "aria-label": `Usar ${u.nombre}` } }, [icono(operable ? "bi-joystick" : "bi-eye")]);
         usar.addEventListener("click", () => {
           fijarVehiculo(u.id_vehiculo);
-          irAControl?.(u.id_propietario ? "monitoreo" : "control");
+          irAControl?.(operable ? "control" : "monitoreo");
         });
         celdas.push(crear("td", {}, [est]), crear("td", {}, [asig]), crear("td", { texto: String(u.comandos) }), crear("td", {}, [usar]));
       }

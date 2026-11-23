@@ -61,8 +61,62 @@ export function crearMisVehiculos({ contenedor, servicios, avisar, irA, cajaEdit
           crear("span", { texto: `${u.modelo || "Sin modelo"} · Serie ${u.numero_serie || "—"}` }),
         ]),
         usar,
+        soporte(u),
       ]);
     }));
+  }
+
+  // ----- Autorización de soporte para la empresa -----
+  // El servidor decide; aquí solo se pide y se muestra el tiempo que queda.
+  function soporte(u) {
+    const segundos = Number(u.soporte_segundos) || 0;
+    const caja = crear("div", { clase: "soporte", atributos: { "data-activo": segundos > 0 ? "si" : "" } });
+    if (segundos > 0) {
+      const hasta = new Date(Date.now() + segundos * 1000);
+      const hora = hasta.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+      const revocar = crear("button", { clase: "btn-sec peligro", atributos: { type: "button" } }, [
+        icono("bi-shield-x"), crear("span", { texto: "Revocar" }),
+      ]);
+      revocar.addEventListener("click", async () => {
+        revocar.disabled = true;
+        try {
+          await servicios.revocarSoporte(u.id_vehiculo);
+          avisar("Soporte revocado: la empresa ya no puede operar tu unidad.", "ok");
+        } catch (e) {
+          avisar(`Revocar soporte: ${mensajeDeError(e)}`, "error");
+        }
+        await cargar();
+      });
+      caja.append(
+        icono("bi-shield-check"),
+        crear("span", { texto: `La empresa tiene soporte autorizado hasta las ${hora}.` }),
+        revocar,
+      );
+    } else {
+      const minutos = crear("select", { clase: "form-select form-select-sm", atributos: { "aria-label": `Duración del soporte para ${u.nombre}` } },
+        [15, 30, 60, 120].map((m) => crear("option", { texto: `${m} min`, atributos: { value: String(m) } })));
+      minutos.value = "30";
+      const autorizar = crear("button", { clase: "btn-sec", atributos: { type: "button" } }, [
+        icono("bi-shield-plus"), crear("span", { texto: "Autorizar soporte" }),
+      ]);
+      autorizar.addEventListener("click", async () => {
+        autorizar.disabled = true;
+        try {
+          await servicios.autorizarSoporte(u.id_vehiculo, Number(minutos.value));
+          avisar(`Autorizaste a la empresa a operar «${u.nombre}» durante ${minutos.value} minutos.`, "ok");
+        } catch (e) {
+          avisar(`Autorizar soporte: ${mensajeDeError(e)}`, "error");
+        }
+        await cargar();
+      });
+      caja.append(
+        icono("bi-shield-lock"),
+        crear("span", { texto: "La empresa solo puede monitorear esta unidad." }),
+        minutos,
+        autorizar,
+      );
+    }
+    return caja;
   }
 
   return { cargar, pintar, unidades: () => unidades };

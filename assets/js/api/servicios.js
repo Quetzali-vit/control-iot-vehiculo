@@ -50,6 +50,17 @@ export const servicios = {
     return datos;
   },
 
+  // Autorización de soporte: el comprador deja que la empresa opere SU unidad un rato
+  async autorizarSoporte(id, minutos) {
+    const { datos } = await solicitar(`/mis-vehiculos/${id}/soporte`, { metodo: "POST", cuerpo: { minutos } });
+    return datos;
+  },
+
+  async revocarSoporte(id) {
+    const { datos } = await solicitar(`/mis-vehiculos/${id}/soporte/revocar`, { metodo: "POST" });
+    return datos;
+  },
+
   async misVehiculos() {
     const { datos } = await solicitar(RUTAS.misVehiculos());
     exigir(esLista(datos), "La lista de vehículos no es válida");

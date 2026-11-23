@@ -213,7 +213,7 @@ function iniciarPlataforma(yo) {
     setTimeout(() => principal.classList.remove("pulsado"), 300);
     if (store.get().activo !== null) store.set({ activo: null });
     if (store.get().soloMonitoreo) {
-      avisar("Esta unidad pertenece a un comprador: desde la empresa solo se monitorea.", "aviso");
+      avisar("Esta unidad pertenece a un comprador: necesitas que el dueño autorice soporte para operarla.", "aviso");
       return;
     }
     coordinador.detener(fuente);
@@ -265,6 +265,8 @@ function iniciarPlataforma(yo) {
       else item.removeAttribute("aria-current");
     }
     if (nombre === "admin") vistaAdmin?.abrir();
+    // El comprador pudo autorizar (o revocar) soporte mientras tanto: se relee el inventario
+    if (nombre === "control" && rol === "ADMIN") cargarOpcionesAdmin();
     if (nombre === "mis") {
       misVehiculos?.cargar().then((lista) => {
         if (lista.length) editor("mis", cajaEditorMis).refrescar();
@@ -297,7 +299,7 @@ function iniciarPlataforma(yo) {
     const s = store.get();
     const r = s.acciones[0];
     if (!r) {
-      ultimaAccion.textContent = s.soloMonitoreo ? "Unidad vendida: desde la empresa solo se monitorea" : "Sin acciones todavía";
+      ultimaAccion.textContent = s.soloMonitoreo ? "Unidad vendida: solo monitoreo hasta que el dueño autorice soporte" : "Sin acciones todavía";
       ultimaAccion.dataset.fase = "";
     } else {
       const wsTxt = r.ws ? ", evento WS" : "";
@@ -340,7 +342,9 @@ function iniciarPlataforma(yo) {
     cuenta.fijarOpciones(unidadesAdmin.map((u) => ({
       id_vehiculo: u.id_vehiculo,
       nombre: u.nombre,
-      etiqueta: `${u.nombre} · ID ${u.id_vehiculo}${u.id_propietario ? " · vendida (solo monitoreo)" : u.estado_comercial === "EXHIBICION" ? " · exhibición" : ""}`,
+      etiqueta: `${u.nombre} · ID ${u.id_vehiculo}${u.id_propietario
+        ? (u.soporte_segundos > 0 ? " · vendida · soporte autorizado" : " · vendida (solo monitoreo)")
+        : u.estado_comercial === "EXHIBICION" ? " · exhibición" : ""}`,
     })));
     if (!unidadesAdmin.some((u) => u.id_vehiculo === vehiculoActual())) {
       const preferida = unidadesAdmin.find((u) => !u.id_propietario) || unidadesAdmin[0];
@@ -349,10 +353,22 @@ function iniciarPlataforma(yo) {
     marcarSoloMonitoreo();
   }
 
+  // Cuando vence el soporte autorizado, se vuelve a leer el inventario para
+  // apagar los controles (el servidor ya rechaza con 403 desde ese momento).
+  let temporizadorSoporte = null;
+
   function marcarSoloMonitoreo() {
     const u = unidadesAdmin.find((x) => x.id_vehiculo === vehiculoActual());
-    const solo = rol === "ADMIN" && Boolean(u?.id_propietario);
-    if (store.get().soloMonitoreo !== solo) store.set({ soloMonitoreo: solo });
+    const solo = rol === "ADMIN" && Boolean(u?.id_propietario) && !(u?.soporte_segundos > 0);
+    clearTimeout(temporizadorSoporte);
+    if (rol === "ADMIN" && u?.id_propietario && u.soporte_segundos > 0) {
+      temporizadorSoporte = setTimeout(async () => {
+        await cargarOpcionesAdmin();
+        cargarDatos();
+      }, u.soporte_segundos * 1000 + 1500);
+    }
+    const anterior = store.get().soloMonitoreo;
+    if (anterior !== solo) store.set({ soloMonitoreo: solo, catalogoListo: !solo && store.get().catalogo.length > 0 });
     document.body.dataset.soloMonitoreo = solo ? "si" : "";
   }
 
@@ -417,7 +433,7 @@ function iniciarPlataforma(yo) {
       if (rol === "INVITADO" && Array.isArray(permitidos)) catalogo = catalogo.filter((c) => permitidos.includes(c.nombre));
       store.set({ catalogo, catalogoListo: !store.get().soloMonitoreo });
       estadoCarga.hidden = !store.get().soloMonitoreo;
-      if (store.get().soloMonitoreo) estadoCarga.textContent = "Vendida: solo monitoreo";
+      if (store.get().soloMonitoreo) estadoCarga.textContent = "Vendida: solo monitoreo (sin soporte autorizado)";
       if (catalogo.length === 0) {
         estadoCarga.hidden = false;
         estadoCarga.textContent = "Esta unidad no tiene comandos configurados";
