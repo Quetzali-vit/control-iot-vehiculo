@@ -11,6 +11,7 @@
 // - Una respuesta REST vieja jamás sobrescribe información más nueva (se comparan
 //   los sellos de cada petición y la marca temporal del estado).
 import { CONFIG } from "../config.js";
+import { vehiculoActual } from "../estado/contexto.js";
 import { mensajeDeError } from "../utils/errores.js";
 import { aFecha } from "../utils/fechas.js";
 
@@ -122,7 +123,7 @@ export function crearMonitor({ servicios, store, avisar }) {
   /** Eventos del WebSocket compartido con CONTROL. */
   function onEventoWs(evento) {
     if (!evento || typeof evento !== "object") return;
-    if (evento.id_vehiculo !== undefined && evento.id_vehiculo !== CONFIG.VEHICLE_ID) return;
+    if (evento.id_vehiculo !== undefined && evento.id_vehiculo !== vehiculoActual()) return;
     const tipo = evento.evento;
     if (tipo === "pong") return;
 
@@ -155,5 +156,18 @@ export function crearMonitor({ servicios, store, avisar }) {
     avisar?.("WebSocket recuperado: se volvió a consultar el estado y el historial.", "ok");
   }
 
-  return { sincronizar, onEventoWs, onReconexionWs, cargarHistorial, cargarEstado };
+  /**
+   * Cambio de unidad (4.3): se olvida todo lo de la unidad anterior y las
+   * respuestas que aún vengan en camino para ella se descartan por sello.
+   */
+  function reiniciar() {
+    clearTimeout(historialPendiente);
+    ultimoEstadoAplicado = ++selloEstado;
+    ultimoHistorialAplicado = ++selloHistorial;
+    historialRepetir = false;
+    store.set({ ultimoMovimiento: null, estadoError: "", historial: [], historialTotal: null,
+      historialListo: false, historialError: "" });
+  }
+
+  return { sincronizar, onEventoWs, onReconexionWs, cargarHistorial, cargarEstado, reiniciar };
 }

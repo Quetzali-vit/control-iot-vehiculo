@@ -1,6 +1,6 @@
 // Selección, inicio y cancelación de DEMO existentes. La secuencia la ejecuta el backend;
 // aquí solo se refleja el avance que llega por WebSocket.
-import { CONFIG } from "../config.js";
+import { vehiculoActual } from "../estado/contexto.js";
 import { mensajeDeError } from "../utils/errores.js";
 
 export function crearControlDemo({ servicios, store, obtenerClave, pedirClave, avisar }) {
@@ -45,7 +45,7 @@ export function crearControlDemo({ servicios, store, obtenerClave, pedirClave, a
     }
     const clave = obtenerClave();
     if (!clave) {
-      pedirClave("Escribe la clave de control para iniciar la DEMO.");
+      pedirClave("Inicia sesión para ejecutar la DEMO.");
       return;
     }
 
@@ -72,7 +72,7 @@ export function crearControlDemo({ servicios, store, obtenerClave, pedirClave, a
     if (!store.get().demoActiva || cancelando) return;
     const clave = obtenerClave();
     if (!clave) {
-      pedirClave("Escribe la clave de control para cancelar la DEMO.");
+      pedirClave("Inicia sesión para cancelar la DEMO.");
       return;
     }
     cancelando = true;
@@ -93,7 +93,7 @@ export function crearControlDemo({ servicios, store, obtenerClave, pedirClave, a
   }
 
   function onEventoWs(evento) {
-    if (!evento || evento.id_vehiculo !== CONFIG.VEHICLE_ID) return;
+    if (!evento || evento.id_vehiculo !== vehiculoActual()) return;
     const actual = store.get().demoActiva;
 
     switch (evento.evento) {

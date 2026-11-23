@@ -1,0 +1,225 @@
+/* =========================================================================
+   PRÁCTICA 4.3 — Acceso, cuenta, ADMINISTRACIÓN, Mis vehículos y demos.
+   Usa las mismas variables y la misma estética de consola de 4.1/4.2.
+   ========================================================================= */
+
+/* ----- Botones comunes ----- */
+.btn-prim, .btn-sec {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 42px; padding: 0 14px; border-radius: 12px; font-weight: 600; font-size: 0.9rem;
+  touch-action: manipulation; transition: filter 120ms ease, transform 90ms ease;
+}
+.btn-prim { border: 0; color: #021a24; background: linear-gradient(180deg, #46e0ff, #1aa8d6); }
+.btn-sec { border: 1px solid var(--borde); color: var(--texto); background: var(--vidrio-alto); }
+.btn-sec.peligro { border-color: rgba(255, 77, 94, 0.6); color: #ffc0c6; background: rgba(255, 77, 94, 0.1); }
+.btn-prim:hover:not(:disabled), .btn-sec:hover:not(:disabled) { filter: brightness(1.12); }
+.btn-prim:active:not(:disabled), .btn-sec:active:not(:disabled) { transform: scale(0.97); }
+.btn-prim:disabled, .btn-sec:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-ancho { width: 100%; }
+.btn-icono {
+  display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none;
+  border: 1px solid var(--borde); border-radius: 11px; background: var(--vidrio); color: var(--texto);
+}
+.btn-icono:hover:not(:disabled) { border-color: var(--cian); color: var(--cian); }
+.btn-icono:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-icono.peligro { color: #ff9aa4; }
+.btn-texto-sm { display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: var(--cian); font-size: 0.8rem; font-weight: 600; min-height: 36px; }
+
+.campo { display: grid; gap: 4px; font-size: 0.82rem; color: var(--suave); min-width: 0; }
+.campo .form-control, .campo .form-select,
+.editor .form-control, .editor .form-select, .admin .form-select {
+  min-height: 42px; background-color: var(--fondo-2); border-color: var(--borde); color: var(--texto); border-radius: 11px;
+}
+.form-select-sm { min-height: 36px !important; font-size: 0.82rem; padding-top: 0; padding-bottom: 0; }
+.form-nota { font-size: 0.84rem; color: var(--suave); min-height: 1.2em; }
+.form-nota[data-tipo="aviso"] { color: var(--ambar-claro); }
+.form-nota[data-tipo="error"] { color: #ffc0c6; }
+.nota-suave { font-size: 0.78rem; color: var(--suave); line-height: 1.35; }
+.alerta { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 77, 94, 0.45); background: rgba(255, 77, 94, 0.08); color: #ffc0c6; font-size: 0.86rem; }
+.insignia { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: var(--vidrio-alto); color: var(--suave); white-space: nowrap; }
+.insignia-fabrica, .insignia-admin { background: rgba(255, 184, 28, 0.14); color: var(--ambar-claro); }
+.insignia-privada { background: rgba(60, 214, 255, 0.14); color: #bdf2ff; }
+.insignia-usuario { background: rgba(53, 224, 138, 0.14); color: #b9f5d4; }
+
+/* ----- Pantalla de acceso ----- */
+.acceso { min-height: 0; overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+.acceso-caja { max-width: 1080px; margin: 0 auto; display: grid; gap: 18px; }
+.acceso-marca { display: flex; align-items: center; gap: 14px; }
+.acceso-marca img { border-radius: 14px; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5); }
+.acceso-marca h1 { font-size: 1.7rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.acceso-marca p { color: var(--suave); font-size: 0.9rem; }
+.acceso-columnas { display: grid; gap: 16px; }
+.acceso-login, .acceso-catalogo {
+  padding: 18px; border-radius: 20px; border: 1px solid var(--borde);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  display: grid; gap: 12px; align-content: start;
+}
+.acceso-login h2, .acceso-catalogo h2 { font-size: 1.15rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.acceso-login h2 .bi, .acceso-catalogo h2 .bi { color: var(--ambar); }
+.acceso-mostrar { font-size: 0.85rem; color: var(--suave); display: flex; gap: 8px; align-items: center; }
+.acceso .creditos { padding: 4px 0 0; }
+.catalogo-lista { display: grid; gap: 12px; }
+.modelo-tarjeta { display: grid; gap: 8px; padding: 14px; border-radius: 16px; border: 1px solid var(--borde); background: var(--vidrio); }
+.modelo-cabeza { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.modelo-cabeza h3 { margin: 0; font-family: var(--f-titulo); font-size: 1.2rem; letter-spacing: 0.04em; }
+.modelo-precio { color: var(--ambar-claro); font-weight: 700; white-space: nowrap; }
+.modelo-desc { font-size: 0.86rem; color: var(--texto); }
+.modelo-meta, .modelo-disp { display: flex; gap: 6px; align-items: center; font-size: 0.8rem; color: var(--suave); }
+.modelo-disp[data-libre="si"] { color: #b9f5d4; }
+.modelo-disp[data-libre="no"] { color: var(--ambar-claro); }
+.btn-probar {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+  border: 0; border-radius: 12px; font-weight: 700; color: #241b00; background: linear-gradient(180deg, #ffd25a, #ffb81c);
+}
+.btn-probar:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ----- Cuenta y unidad en la cabecera ----- */
+.marca-texto { flex-wrap: wrap; row-gap: 2px; }
+.sel-vehiculo {
+  max-width: min(46vw, 340px); min-height: 30px; padding: 0 10px; border-radius: 9px;
+  border: 1px solid var(--borde); background: var(--fondo-2); color: var(--texto); font-size: 0.8rem;
+}
+.vehiculo-fijo { font-size: 0.78rem; color: var(--suave); white-space: nowrap; }
+.cuenta { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; }
+.cuenta-texto { display: grid; text-align: right; line-height: 1.1; }
+.cuenta-nombre { font-size: 0.82rem; font-weight: 600; max-width: 30vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cuenta-rol { font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--suave); }
+.cuenta-rol[data-rol="ADMIN"] { color: var(--ambar-claro); }
+.cuenta-rol[data-rol="USUARIO"] { color: #b9f5d4; }
+.cuenta-rol[data-rol="INVITADO"] { color: #bdf2ff; }
+.cuenta .btn-icono { width: 36px; height: 36px; }
+
+.banner-prueba {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-radius: 12px;
+  border: 1px solid rgba(60, 214, 255, 0.45); background: rgba(60, 214, 255, 0.1); font-size: 0.84rem;
+}
+.banner-prueba .bi { color: var(--cian); }
+.banner-prueba strong { font-variant-numeric: tabular-nums; font-size: 1rem; }
+.banner-prueba .btn-sec { margin-left: auto; min-height: 34px; }
+.banner-prueba[data-urgente="si"] { border-color: rgba(255, 184, 28, 0.6); background: rgba(255, 184, 28, 0.12); }
+
+/* El invitado no ve el panel de DEMO (no puede ejecutarlas) */
+body[data-rol="INVITADO"] .zona-demo { display: none; }
+
+/* ----- Vistas con desplazamiento interno ----- */
+.vista-scroll { overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
+.admin, .mis { max-width: 1200px; margin: 0 auto; display: grid; gap: 12px; }
+.admin-tabs {
+  position: sticky; top: 0; z-index: 2; display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px;
+  background: linear-gradient(var(--fondo) 75%, transparent); scrollbar-width: none;
+}
+.admin-tab {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 40px; padding: 0 12px;
+  border-radius: 11px; border: 1px solid var(--borde); background: var(--vidrio); color: var(--suave); font-weight: 600; font-size: 0.84rem;
+}
+.admin-tab[aria-selected="true"] { color: var(--texto); border-color: var(--ambar); background: rgba(255, 184, 28, 0.12); }
+.admin-tab[aria-selected="true"] .bi { color: var(--ambar); }
+.admin-cuerpo, .admin-seccion { display: grid; gap: 12px; min-width: 0; }
+
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tile { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--borde); background: var(--vidrio); }
+.tile .bi { color: var(--suave); font-size: 1.05rem; }
+.tile strong { font-family: var(--f-titulo); font-size: 1.7rem; line-height: 1; }
+.tile span { font-size: 0.74rem; color: var(--suave); }
+.tile.t-ok strong { color: #b9f5d4; }
+.tile.t-ambar strong { color: var(--ambar-claro); }
+.tile.t-cian strong { color: #bdf2ff; }
+.dos-col { display: grid; gap: 12px; min-width: 0; }
+
+.bloque { display: grid; gap: 8px; min-width: 0; }
+.bloque-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bloque-cabeza h2, .bloque-cabeza h3, .editor-cabeza h3 {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+.admin-plegable { border: 1px solid var(--borde); border-radius: 16px; background: var(--vidrio); }
+.admin-plegable > summary { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 14px; cursor: pointer; font-weight: 600; list-style: none; }
+.admin-plegable > summary::-webkit-details-marker { display: none; }
+.admin-plegable > summary .bi { color: var(--ambar); }
+.admin-plegable[open] > summary { border-bottom: 1px solid var(--borde); }
+.admin-form { display: grid; gap: 10px; padding: 14px; }
+.admin-form > h3 { display: none; }
+.campos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.form-pie { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+/* Tablas: desplazan dentro de su caja, nunca la página completa */
+.tabla-caja { overflow-x: auto; border-radius: 14px; border: 1px solid var(--borde); background: var(--vidrio); }
+.tabla { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.tabla th {
+  padding: 8px 10px; text-align: left; font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--suave); background: #121a2e; border-bottom: 1px solid var(--borde); white-space: nowrap;
+}
+.tabla td { padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); vertical-align: middle; }
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla tbody tr[data-actual="si"] { background: rgba(60, 214, 255, 0.07); }
+.tabla .form-select { min-width: 150px; }
+.estado-com { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 0.74rem; font-weight: 600; white-space: nowrap; background: var(--vidrio-alto); }
+.estado-com.e-disponible { color: #b9f5d4; }
+.estado-com.e-vendido { color: #bdf2ff; }
+.estado-com.e-exhibicion { color: var(--ambar-claro); }
+.estado-com.e-inactivo { color: var(--suave); }
+.resultado { font-weight: 700; font-size: 0.74rem; }
+.resultado.r-ok { color: #b9f5d4; }
+.resultado.r-rechazado { color: #ffc0c6; }
+
+/* ----- Mis vehículos ----- */
+.mis-lista { display: grid; gap: 10px; }
+.mi-unidad {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 16px; border: 1px solid var(--borde); background: var(--vidrio);
+}
+.mi-unidad > .bi { font-size: 1.6rem; color: var(--ambar); }
+.mi-unidad-texto { display: grid; min-width: 0; }
+.mi-unidad-texto span { font-size: 0.8rem; color: var(--suave); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mi-unidad[data-actual="si"] { border-color: rgba(60, 214, 255, 0.6); box-shadow: 0 0 20px rgba(60, 214, 255, 0.15); }
+
+/* ----- Editor de demos ----- */
+.editor { display: grid; gap: 10px; }
+.editor-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.editor-nueva { display: grid; gap: 8px; }
+.demo-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.demo-item {
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px;
+  min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--borde); background: var(--vidrio);
+  color: var(--texto); text-align: left;
+}
+.demo-item[aria-pressed="true"] { border-color: var(--cian); background: rgba(60, 214, 255, 0.08); }
+.demo-item-nombre { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.demo-item-pasos { font-size: 0.76rem; color: var(--suave); white-space: nowrap; }
+.editor-demo { display: grid; gap: 10px; padding: 12px; border-radius: 16px; border: 1px solid rgba(60, 214, 255, 0.35); background: rgba(60, 214, 255, 0.04); min-width: 0; }
+.editor-demo-cabeza { display: flex; align-items: center; gap: 10px; }
+.editor-demo-cabeza h4 { margin: 0; font-family: var(--f-titulo); font-size: 1.2rem; }
+.editor-demo .tabla .form-control { min-width: 96px; max-width: 130px; }
+.editor-demo .tabla .form-select { min-width: 170px; }
+.paso-acciones { display: flex; gap: 4px; }
+.paso-acciones .btn-icono { width: 36px; height: 36px; }
+.editor-total { display: flex; align-items: center; gap: 6px; font-size: 0.84rem; color: var(--suave); flex-wrap: wrap; }
+.sin-guardar { color: var(--ambar-claro); }
+.editor-botones { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-editor { display: grid; min-width: 0; }
+
+/* ----- Unidad vendida vista por la empresa: solo monitoreo ----- */
+body[data-solo-monitoreo="si"] .mando { opacity: 0.55; }
+
+@media (min-width: 640px) {
+  .tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .editor-nueva { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; }
+}
+@media (min-width: 900px) {
+  .acceso-columnas { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); align-items: start; }
+  .catalogo-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dos-col { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .cuenta-nombre { display: none; }
+  .sel-vehiculo { max-width: 52vw; }
+  .mi-unidad { grid-template-columns: auto minmax(0, 1fr); }
+  .mi-unidad .btn-prim, .mi-unidad .btn-sec { grid-column: 1 / -1; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .banner-prueba { padding: 4px 10px; font-size: 0.76rem; }
+  .banner-prueba .btn-sec { min-height: 30px; }
+}
+
+/* El aviso de prueba ocupa todo el ancho de la cabecera */
+.banner-prueba { grid-column: 1 / -1; }

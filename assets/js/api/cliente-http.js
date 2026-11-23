@@ -1,5 +1,11 @@
 // Cliente HTTP único: URL base, encabezados, tiempo límite, JSON y errores.
+// 4.3: agrega el token de sesión (Authorization: Bearer) a cada petición y avisa
+// a la aplicación cuando el servidor responde 401 (sesión vencida o revocada).
 import { CONFIG } from "../config.js";
+import { sesion } from "../estado/sesion.js";
+
+/** Evento global: la API dijo que la sesión ya no sirve. */
+export const EVENTO_SESION_VENCIDA = "control-iot:sesion-vencida";
 
 export class ErrorApi extends Error {
   /**
@@ -35,7 +41,7 @@ function leerDetalle(cuerpo) {
 export async function solicitar(ruta, {
   metodo = "GET",
   cuerpo,
-  clave,
+  sinSesion = false,
   timeoutMs = CONFIG.HTTP_TIMEOUT_MS,
   signal,
 } = {}) {
@@ -54,7 +60,8 @@ export async function solicitar(ruta, {
 
   const encabezados = { Accept: "application/json" };
   if (cuerpo !== undefined) encabezados["Content-Type"] = "application/json";
-  if (clave) encabezados["X-API-Key"] = clave;
+  const token = sinSesion ? "" : sesion.token();
+  if (token) encabezados.Authorization = `Bearer ${token}`;
 
   let respuesta;
   try {
@@ -93,6 +100,9 @@ export async function solicitar(ruta, {
   }
 
   if (!respuesta.ok) {
+    if (respuesta.status === 401 && token) {
+      window.dispatchEvent(new CustomEvent(EVENTO_SESION_VENCIDA, { detail: leerDetalle(datos) }));
+    }
     throw new ErrorApi("http", `HTTP ${respuesta.status}`, {
       status: respuesta.status,
       detalle: leerDetalle(datos),

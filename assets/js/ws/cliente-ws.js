@@ -1,15 +1,31 @@
 // Sesión WSS real del navegador con el servidor de AWS.
 // Su estado indica la conexión de ESTE navegador, no la del vehículo físico.
+//
+// 4.3: el canal está protegido. El token de sesión viaja en la cadena de consulta
+// (el navegador no puede mandar encabezados al abrir un WebSocket) y el servidor
+// comprueba que esa persona tenga acceso a ESA unidad. Al cambiar de unidad se
+// cierra la suscripción anterior antes de abrir la nueva: nunca hay dos a la vez.
 import { CONFIG, RUTAS } from "../config.js";
+import { vehiculoActual } from "../estado/contexto.js";
+import { sesion } from "../estado/sesion.js";
+
+// Códigos de cierre que manda la API (ver app/routers/websocket.py)
+const CIERRE_SIN_SESION = 4401;
+const CIERRE_SIN_PERMISO = 4403;
+const CIERRE_NO_EXISTE = 4404;
 
 /**
  * @param {{
  *   onEstado: (estado: "conectando"|"en_linea"|"reconectando"|"desconectado", detalle?: string) => void,
  *   onMensaje: (mensaje: object) => void,
+ *   onSinSesion?: () => void,
  * }} opciones
  */
-export function crearClienteWs({ onEstado, onMensaje }) {
-  const url = CONFIG.WS_BASE_URL + RUTAS.websocket(CONFIG.VEHICLE_ID);
+export function crearClienteWs({ onEstado, onMensaje, onSinSesion }) {
+  const construirUrl = () =>
+    `${CONFIG.WS_BASE_URL}${RUTAS.websocket(vehiculoActual())}?token=${encodeURIComponent(sesion.token())}`;
+  // Para mostrar en pantalla, sin el token
+  const urlVisible = () => CONFIG.WS_BASE_URL + RUTAS.websocket(vehiculoActual());
 
   let socket = null;
   let intentos = 0;
@@ -53,11 +69,15 @@ export function crearClienteWs({ onEstado, onMensaje }) {
       return; // se reintenta con el evento "online"
     }
     clearTimeout(temporizadorReconexion);
-    onEstado(intentos === 0 ? "conectando" : "reconectando", url);
+    if (!sesion.token()) {
+      onEstado("desconectado", "Sin sesión");
+      return;
+    }
+    onEstado(intentos === 0 ? "conectando" : "reconectando", urlVisible());
 
     let ws;
     try {
-      ws = new WebSocket(url);
+      ws = new WebSocket(construirUrl());
     } catch {
       programarReconexion("No se pudo abrir el WebSocket");
       return;
@@ -67,7 +87,7 @@ export function crearClienteWs({ onEstado, onMensaje }) {
     ws.addEventListener("open", () => {
       if (socket !== ws) return;
       intentos = 0;
-      onEstado("en_linea", url);
+      onEstado("en_linea", urlVisible());
       iniciarLatido();
     });
 
@@ -92,10 +112,19 @@ export function crearClienteWs({ onEstado, onMensaje }) {
         onEstado("desconectado", "Conexión cerrada");
         return;
       }
-      const motivo = evento.code === 4404
-        ? "El vehículo no existe en la API"
-        : "Se perdió la conexión";
-      programarReconexion(motivo);
+      if (evento.code === CIERRE_SIN_SESION) {
+        // La sesión venció o se cerró: reintentar no sirve de nada
+        onEstado("desconectado", "La sesión terminó");
+        onSinSesion?.();
+        return;
+      }
+      if (evento.code === CIERRE_SIN_PERMISO || evento.code === CIERRE_NO_EXISTE) {
+        onEstado("desconectado", evento.code === CIERRE_NO_EXISTE
+          ? "La unidad no existe o no es tuya"
+          : "Sin permiso sobre esta unidad");
+        return;
+      }
+      programarReconexion("Se perdió la conexión");
     });
     // "error" siempre va seguido de "close"; el estado se actualiza ahí.
   }
@@ -120,6 +149,20 @@ export function crearClienteWs({ onEstado, onMensaje }) {
       abrir();
     },
     reconectarAhora,
+    /** Cierra la suscripción de la unidad anterior y abre la de la unidad actual. */
+    reabrir() {
+      detenido = false;
+      intentos = 0;
+      limpiarTemporizadores();
+      const viejo = socket;
+      socket = null;            // los eventos del socket viejo se ignoran desde ya
+      try {
+        viejo?.close(1000, "Cambio de unidad");
+      } catch {
+        // ya estaba cerrado
+      }
+      abrir();
+    },
     /** Pide al servidor el estado guardado (mensaje "estado" del protocolo). */
     pedirEstado() {
       if (socket?.readyState === WebSocket.OPEN) socket.send("estado");

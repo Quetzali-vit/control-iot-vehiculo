@@ -2,6 +2,7 @@
 // Reglas: un movimiento a la vez, el último pedido gana, DETENER tiene prioridad
 // y las respuestas tardías no vuelven a activar un movimiento ya detenido.
 import { CONFIG } from "../config.js";
+import { vehiculoActual } from "../estado/contexto.js";
 import { mensajeDeError } from "../utils/errores.js";
 
 /**
@@ -163,7 +164,7 @@ export function crearCoordinador({ servicios, store, obtenerClave, pedirClave, a
 
   /** Relaciona un evento "movimiento" del WebSocket con la acción que lo produjo. */
   function registrarEventoWs(evento) {
-    if (evento?.evento !== "movimiento" || evento.id_vehiculo !== CONFIG.VEHICLE_ID) return;
+    if (evento?.evento !== "movimiento" || evento.id_vehiculo !== vehiculoActual()) return;
     const limite = Date.now() - CONFIG.CORRELACION_WS_MS;
     const candidatos = store.get().acciones.filter((r) =>
       !r.ws &&

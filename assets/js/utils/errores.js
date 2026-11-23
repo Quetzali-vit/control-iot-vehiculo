@@ -19,9 +19,9 @@ export function mensajeDeError(error) {
 
   switch (error.status) {
     case 401:
-      return "Falta la clave de control. Escríbela en «Clave».";
+      return "Tu sesión terminó. Vuelve a iniciar sesión.";
     case 403:
-      return "La clave de control no es válida. Escríbela de nuevo.";
+      return error.detalle || "No tienes permiso para esta acción.";
     case 404:
       return error.detalle || "El recurso no existe en la API.";
     case 409:
