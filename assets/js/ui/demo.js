@@ -8,7 +8,7 @@ export function crearPanelDemo(store, controlDemo) {
   const avance = $("#demo-avance");
   const barra = $("#demo-barra");
   const texto = $("#demo-texto");
-  let firma = "";
+  let firma = null; // null: construye las opciones la primera vez aunque no haya DEMO
 
   botonIniciar.addEventListener("click", () => {
     const id = Number.parseInt(selector.value, 10);

@@ -102,7 +102,7 @@
 body[data-rol="INVITADO"] .zona-demo { display: none; }
 
 /* ----- Vistas con desplazamiento interno ----- */
-.vista-scroll { overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
+.vista-scroll { overflow-y: auto; overscroll-behavior: contain; padding-bottom: 84px; }
 .admin, .mis { max-width: 1200px; margin: 0 auto; display: grid; gap: 12px; }
 .admin-tabs {
   position: sticky; top: 0; z-index: 2; display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px;
@@ -223,3 +223,17 @@ body[data-solo-monitoreo="si"] .mando { opacity: 0.55; }
 
 /* El aviso de prueba ocupa todo el ancho de la cabecera */
 .banner-prueba { grid-column: 1 / -1; }
+
+/* Cabecera con cuenta y selector: los indicadores bajan a su propia fila hasta
+   que hay ancho de sobra (celular horizontal los conserva en una sola fila) */
+.marca h1 { max-width: 38vw; }
+@media (max-width: 1199px) and (min-height: 521px) {
+  .cabecera { grid-template-columns: minmax(0, 1fr); }
+  .indicadores { justify-self: stretch; max-width: none; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .cuenta-texto { display: none; }
+  .sel-vehiculo { max-width: 26vw; min-height: 26px; font-size: 0.72rem; }
+  .marca h1 { max-width: 20vw; }
+  .marca-texto { flex-wrap: nowrap; }
+}

@@ -1,5 +1,7 @@
 # Control IoT · Retroexcavadora
 
+> **Práctica 4.3:** el sitio ahora tiene tres módulos — CONTROL, MONITOREO y **ADMINISTRACIÓN** — con inicio de sesión y tres roles (Administrador, Comprador e Invitado). Ver la sección [ADMINISTRACIÓN (práctica 4.3)](#administración-práctica-43).
+
 Aplicación web de **CONTROL** (práctica 4.1) y **MONITOREO** (práctica 4.2) para el vehículo IoT, en un solo sitio y un solo repositorio, con diseño de consola nocturna tipo gamepad. CONTROL tiene los tres indicadores de conexión, un panel de estado, dos joysticks táctiles (tracción a la izquierda; brazo y pala a la derecha), botones con el resto del catálogo real, un DETENER prioritario al centro, DEMO con cancelación y registro de acciones. MONITOREO muestra el último movimiento reportado y los diez movimientos individuales persistidos en Amazon RDS, actualizados en tiempo real por WebSocket. Consume la API FastAPI ya publicada en AWS (HTTPS y WSS) y se publica solo en **GitHub Pages**.
 
 - Página publicada: `https://quetzali-vit.github.io/control-iot-vehiculo/` 
@@ -101,10 +103,54 @@ control-iot-vehiculo/
 
 El joystick izquierdo usa `AVANZAR`, `RETROCEDER`, `GIRAR_IZQUIERDA` y `GIRAR_DERECHA`; el derecho usa `SUBIR_BRAZO`, `BAJAR_BRAZO`, `ABRIR_PALA` y `CERRAR_PALA`, y `DETENER` es el botón central (todos se buscan por nombre en el catálogo y se configuran en `assets/js/config.js`). El resto de comandos del catálogo aparece como botones. El botón **Encender / apagar** alterna entre rojo (apagado) y verde (encendido) con una animación y un chip junto al estado; como el ESP32 también alterna, si se reinicia el vehículo la app puede quedar desfasada un toque. Solo hay un movimiento a la vez, así que mientras un joystick o un botón está en uso, los demás controles se bloquean (DETENER nunca) y se liberan al soltar, al terminar el movimiento (~2 s) o al pulsar DETENER. El botón de LUZ se oculta con `COMANDOS_OCULTOS` en `assets/js/config.js`. Cada movimiento se guarda en el historial con `origen = WEB-CONTROL`.
 
+## ADMINISTRACIÓN (práctica 4.3)
+
+Tercer módulo del **mismo** sitio y repositorio. CONTROL y MONITOREO siguen igual; lo que cambia es que ahora cada persona entra con su cuenta y la API decide qué puede ver y mover.
+
+### Roles
+
+| Rol | Cómo entra | Qué ve | Qué puede hacer |
+|---|---|---|---|
+| **Administrador** (la empresa) | Correo y contraseña | Control · Monitoreo · **Administración** · Registro | Dashboard, modelos, unidades, clientes, asignaciones, demos de fábrica y auditoría. Opera las unidades **sin dueño**; las vendidas solo las monitorea. |
+| **Usuario** (comprador) | Correo y contraseña | Control · Monitoreo · **Mis vehículos** · Registro | Opera y monitorea **solo sus unidades**; crea y edita sus demos privadas y ejecuta las de fábrica. |
+| **Invitado** (prospecto) | «Probar ahora» en el catálogo, sin cuenta | Control · Monitoreo · Registro | Unos minutos sobre **una** unidad de exhibición reservada en exclusiva, solo con comandos de movimiento y DETENER. |
+
+El menú por rol es comodidad. **La seguridad real está en la API:** cada petición lleva el token de sesión y el servidor comprueba rol y propiedad de la unidad. Cambiar el id en la URL por el de otro comprador responde 404.
+
+### Pantallas
+
+- **Acceso:** iniciar sesión o elegir un modelo del catálogo público y «Probar ahora».
+- **Cabecera:** nombre y rol, cerrar sesión y **selector de unidad** (el comprador ve solo las suyas; el Admin, el inventario con la marca «vendida (solo monitoreo)»). Al cambiar de unidad se cierra la suscripción WebSocket anterior y se recarga catálogo, demos, estado e historial.
+- **Administración:** pestañas Dashboard (métricas reales), Unidades (alta con copia de comandos, estado comercial, asignación), Modelos, Clientes (alta y baja lógica), Demos (de fábrica) y Auditoría.
+- **Mis vehículos:** las unidades del comprador y su editor de demos.
+- **Editor de demos:** borrador con agregar, quitar, reordenar, comando, duración y pausa; muestra la duración total. **Guardar** persiste en Amazon RDS y **Cancelar** descarta. «Ejecutar en CONTROL» respeta la prioridad de DETENER.
+- **Invitado:** franja con cuenta regresiva y «Terminar prueba». Al vencer, el servidor libera la unidad y le manda DETENER, y la página regresa al acceso.
+
+### Módulos nuevos
+
+```
+assets/js/
+├── estado/sesion.js      Token de sesión (usuario: localStorage; invitado: sessionStorage)
+├── estado/contexto.js    Unidad seleccionada y aviso de cambio
+├── ui/acceso.js          Login y catálogo público con «Probar ahora»
+├── ui/cuenta.js          Cabecera de sesión, selector de unidad y cuenta regresiva
+├── ui/admin.js           Vista ADMINISTRACIÓN
+├── ui/mis-vehiculos.js   Vista «Mis vehículos»
+└── ui/editor-demos.js    Editor de demos compartido
+assets/css/administracion.css
+```
+
+`api/cliente-http.js` agrega `Authorization: Bearer <token>` a cada petición y, ante un 401, cierra la sesión. `ws/cliente-ws.js` abre `wss://…/ws/vehiculos/{id}?token=…`; con el cierre 4401 vuelve al acceso y con 4403/4404 no reintenta.
+
+### Cuentas de demostración
+
+Las crea `migraciones/003_datos_iniciales.sql` del backend: `admin@iot.com` (Administrador), `cliente@iot.com` y `cliente2@iot.com` (compradores). Las contraseñas iniciales están en ese script; cámbialas después de la primera entrada.
+
 ## Seguridad
 
-- **La `X-API-Key` está escrita en `assets/js/config.js`** (decisión del operador para no escribirla en cada dispositivo). Como el repositorio es público, cualquiera que lea ese archivo puede controlar el vehículo: si hay abuso, cambia la clave en el backend y actualízala ahí. Si `API_KEY` se deja vacía, la página vuelve a pedirla en «Clave» (memoria y, opcionalmente, `sessionStorage` de esa pestaña).
-- **CORS** se limita en el backend al origen `https://quetzali-vit.github.io` (ver `assets/docs/CORS_BACKEND.md`). CORS no es autenticación: la protección sigue siendo la clave.
+- **Sin claves en el repositorio.** La antigua `X-API-Key` se retiró del código público: cada persona inicia sesión y recibe un token temporal y revocable. La clave quedó solo para el dispositivo (ESP32), en su firmware y en el `.env` del servidor.
+- El token del Usuario vive en `localStorage` hasta que expira (8 h) o se cierra sesión; el del Invitado en `sessionStorage` y muere con la pestaña o al vencer la prueba. La contraseña nunca se guarda en el navegador.
+- **CORS** se limita en el backend al origen `https://quetzali-vit.github.io` (ver `assets/docs/CORS_BACKEND.md`). CORS no es autenticación: la protección es la sesión más la autorización por unidad, en REST **y** en WebSocket.
 - HTTPS y WSS siempre, sin contenido mixto. Bootstrap e iconos se cargan con integridad SRI.
 - Los datos de la API se pintan con `textContent` (sin `innerHTML`), así que no hay inyección en el DOM.
 - El navegador nunca se conecta a MySQL/RDS; RDS solo se informa a través de `GET /salud`.
@@ -136,7 +182,7 @@ Commits sugeridos: estructura inicial · cliente REST · WebSocket e indicadores
 ## Personalización
 
 - **Créditos:** cambia «Tu nombre completo» en el `<footer>` de `index.html`.
-- **Vehículo:** `VEHICLE_ID` en `assets/js/config.js`. El nombre que aparece arriba es el que tiene en la base de datos (`GET /vehiculos/{id}`).
+- **Vehículo:** ya no es fijo; se elige en el selector de la cabecera. `VEHICLE_ID_POR_DEFECTO` en `assets/js/config.js` solo indica cuál abrir la primera vez.
 
 ## Lista de verificación
 
@@ -152,4 +198,6 @@ Commits sugeridos: estructura inicial · cliente REST · WebSocket e indicadores
 
 ## Nota sobre el ESP32
 
-En esta práctica el vehículo físico no forma parte de la validación. Si el ESP32 está conectado con el código de la etapa anterior, cada movimiento se detiene solo a los 2 s (`DURACION_MOVIMIENTO_MS`). Para que el carrito siga mientras mantienes un joystick, pon ese valor en `0`: la app ya envía DETENER al soltar.
+**4.3:** el WebSocket ya no acepta conexiones anónimas. El firmware del ESP32 debe conectarse a `wss://quetzali-iot.duckdns.org/ws/vehiculos/{id}?clave=<API_KEY del .env del servidor>` para seguir recibiendo los movimientos.
+
+En la práctica 4.2 el vehículo físico no formaba parte de la validación. Si el ESP32 está conectado con el código de la etapa anterior, cada movimiento se detiene solo a los 2 s (`DURACION_MOVIMIENTO_MS`). Para que el carrito siga mientras mantienes un joystick, pon ese valor en `0`: la app ya envía DETENER al soltar.

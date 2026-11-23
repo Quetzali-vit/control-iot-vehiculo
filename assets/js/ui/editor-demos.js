@@ -107,7 +107,7 @@ export function crearEditorDemos({ contenedor, servicios, store, controlDemo, av
         await servicios.agregarPaso(id, idDemo, { ...paso, orden: i + 1 });
       }
       avisar(`DEMO «${seleccion.nombre}» guardada en Amazon RDS (${borrador.length} pasos).`, "ok");
-      await abrir(seleccion);
+      await refrescar(); // vuelve a leer la lista (con su conteo de pasos) y reabre la demo
       alCambiar?.();
     } catch (error) {
       avisar(`Guardar DEMO: ${mensajeDeError(error)}. Se recargó lo que quedó guardado.`, "error");

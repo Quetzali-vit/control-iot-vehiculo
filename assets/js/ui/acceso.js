@@ -76,7 +76,7 @@ export function mostrarAcceso(motivo = "") {
     const libres = Number(m.disponibles) || 0;
     const exhibicion = Number(m.unidades_exhibicion) || 0;
     const boton = crear("button", { clase: "btn-probar", atributos: { type: "button" } }, [
-      icono("bi-joystick"), crear("span", { texto: libres > 0 ? "Probar ahora" : "Ocupado" }),
+      icono("bi-joystick"), crear("span", { texto: libres > 0 ? "Probar ahora" : exhibicion > 0 ? "Ocupado" : "No disponible" }),
     ]);
     boton.disabled = libres === 0;
     boton.addEventListener("click", () => iniciarPrueba(m, boton));

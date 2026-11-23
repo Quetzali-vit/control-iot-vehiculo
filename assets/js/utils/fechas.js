@@ -8,7 +8,9 @@ export function aFecha(valor) {
   if (!valor) return null;
   if (valor instanceof Date) return Number.isNaN(valor.getTime()) ? null : valor;
   if (typeof valor !== "string") return null;
-  const texto = valor.trim();
+  // Acepta "2026-11-13 04:01:46" (espacio) igual que "2026-11-13T04:01:46":
+  // Safari no entiende la forma con espacio.
+  const texto = valor.trim().replace(/^(\d{4}-\d{2}-\d{2}) (\d)/, "$1T$2");
   if (!texto) return null;
   // Con zona explícita (Z o ±hh:mm) se respeta; sin ella se interpreta como UTC,
   // que es como la guarda el backend (documentado en el README).

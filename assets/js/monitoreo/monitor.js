@@ -133,7 +133,9 @@ export function crearMonitor({ servicios, store, avisar }) {
         const nuevo = {
           comando: evento.comando,
           codigo: Number.isInteger(evento.codigo) ? evento.codigo : null,
-          fecha: evento.timestamp ?? null,
+          // «estado_actual» describe el estado GUARDADO: su hora real es fecha_actualizacion.
+          // El timestamp de ese mensaje es solo la hora en que se abrió el WebSocket.
+          fecha: tipo === "estado_actual" ? (evento.fecha_actualizacion ?? null) : (evento.timestamp ?? null),
           conectado: typeof evento.conectado === "boolean" ? evento.conectado
             : Boolean(store.get().ultimoMovimiento?.conectado),
           vehiculo: store.get().ultimoMovimiento?.vehiculo ?? null,
