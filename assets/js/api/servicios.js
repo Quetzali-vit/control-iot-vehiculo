@@ -240,4 +240,26 @@ export const servicios = {
   async auditoria(limite = 50) {
     return (await solicitar(RUTAS.auditoria(limite))).datos;
   },
+  /** Alta/baja de carrito: activo false = baja lógica, conserva el historial */
+  async editarUnidad(id, cambios) {
+    return (await solicitar(`${RUTAS.unidad(id)}/editar`, { metodo: "POST", cuerpo: cambios })).datos;
+  },
+  async sesiones() {
+    return (await solicitar(RUTAS.sesiones())).datos;
+  },
+  async cuentaCliente(idUsuario) {
+    return (await solicitar(RUTAS.cuentaCliente(idUsuario))).datos;
+  },
+  async comandosModelo(idModelo) {
+    return (await solicitar(RUTAS.modeloComandos(idModelo))).datos;
+  },
+  async agregarComandoModelo(idModelo, comando) {
+    return (await solicitar(RUTAS.modeloComandos(idModelo), { metodo: "POST", cuerpo: comando })).datos;
+  },
+  async habilitarComandoModelo(idModelo, nombre, activo) {
+    return (await solicitar(`${RUTAS.modeloComandos(idModelo)}/activo`, { metodo: "POST", cuerpo: { nombre, activo } })).datos;
+  },
+  async demoModelo(idModelo, demo) {
+    return (await solicitar(RUTAS.modeloDemos(idModelo), { metodo: "POST", cuerpo: demo })).datos;
+  },
 };

@@ -93,4 +93,8 @@ export const RUTAS = Object.freeze({
   unidades: () => "/admin/unidades",
   unidad: (id) => `/admin/unidades/${id}`,
   auditoria: (limite = 50) => `/admin/auditoria?limite=${limite}`,
+  sesiones: () => "/admin/sesiones",
+  cuentaCliente: (idUsuario) => `/admin/clientes/${idUsuario}/cuenta`,
+  modeloComandos: (idModelo) => `/admin/modelos/${idModelo}/comandos`,
+  modeloDemos: (idModelo) => `/admin/modelos/${idModelo}/demos`,
 });

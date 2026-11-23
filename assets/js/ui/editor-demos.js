@@ -12,10 +12,12 @@ import { sesion } from "../estado/sesion.js";
 import { crear, icono, nombreLegible } from "../utils/dom.js";
 import { mensajeDeError } from "../utils/errores.js";
 
-/** ¿Puede esta sesión modificar esa demo? (el servidor lo vuelve a decidir) */
+/** ¿Puede esta sesión modificar esa demo? (el servidor lo vuelve a decidir)
+ *  Admin: cualquier demo de los carritos que gestiona (fábrica o del cliente).
+ *  Comprador: solo sus demos privadas. Invitado: ninguna. */
 function editable(demo) {
   if (!demo || sesion.esInvitado()) return false;
-  return sesion.esAdmin() ? demo.tipo === "FABRICA" : demo.tipo === "PRIVADA";
+  return sesion.esAdmin() ? true : demo.tipo === "PRIVADA";
 }
 
 export function crearEditorDemos({ contenedor, servicios, store, controlDemo, avisar, alCambiar }) {
@@ -80,7 +82,7 @@ export function crearEditorDemos({ contenedor, servicios, store, controlDemo, av
   async function crearDemo(nombre, descripcion) {
     try {
       const { id_demo } = await servicios.crearDemo(vehiculoActual(), nombre, descripcion);
-      avisar(`DEMO «${nombre}» creada${sesion.esAdmin() ? " (de fábrica)" : " (privada)"}. Agrega sus pasos.`, "ok");
+      avisar(`DEMO «${nombre}» creada. Agrega sus pasos.`, "ok");
       await refrescar();
       const nueva = demos.find((d) => d.id_demo === id_demo);
       if (nueva) await abrir(nueva);
@@ -173,7 +175,7 @@ export function crearEditorDemos({ contenedor, servicios, store, controlDemo, av
       });
       partes.push(form);
       partes.push(crear("p", { clase: "nota-suave", texto: sesion.esAdmin()
-        ? "Las demos que crees aquí son de fábrica: las ven todos los que usen esta unidad."
+        ? "En un carrito libre la demo es de fábrica (la ven todos); en uno vendido es privada del cliente."
         : "Las demos que crees son privadas: solo tú las ves y las editas. Las de fábrica puedes ejecutarlas, no modificarlas." }));
     }
 
@@ -276,9 +278,7 @@ export function crearEditorDemos({ contenedor, servicios, store, controlDemo, av
         crear("span", { clase: `insignia insignia-${(seleccion.tipo || "FABRICA").toLowerCase()}`, texto: seleccion.tipo === "PRIVADA" ? "Privada" : "Fábrica" }),
       ]),
       ...(seleccion.descripcion ? [crear("p", { clase: "nota-suave", texto: seleccion.descripcion })] : []),
-      ...(!puede ? [crear("p", { clase: "nota-suave", texto: sesion.esAdmin()
-        ? "Es una demo privada de un comprador: no se puede modificar desde la empresa."
-        : "Es una demo de fábrica: puedes ejecutarla, pero no modificarla." })] : []),
+      ...(!puede ? [crear("p", { clase: "nota-suave", texto: "Es una demo de fábrica: puedes ejecutarla, pero no modificarla." })] : []),
       tabla,
       crear("p", { clase: "editor-total" }, [
         icono("bi-stopwatch"),
