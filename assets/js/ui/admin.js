@@ -4,6 +4,7 @@
 // se dice «Sin datos», nunca se simula. Ocultar esta vista a otros roles es solo
 // comodidad: la seguridad real es que la API responde 403 a quien no es ADMIN.
 import { fijarVehiculo, vehiculoActual } from "../estado/contexto.js";
+import { sesion } from "../estado/sesion.js";
 import { crear, icono, nombreLegible } from "../utils/dom.js";
 import { aFecha, fechaCorta, horaLocal } from "../utils/fechas.js";
 import { mensajeDeError } from "../utils/errores.js";
@@ -260,6 +261,11 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
     const filas = datos.usuarios.map((u) => {
       const activo = crear("input", { clase: "form-check-input", atributos: { type: "checkbox", "aria-label": `Cuenta de ${u.correo} activa` } });
       activo.checked = Boolean(u.activo);
+      // Tu propia cuenta no se puede desactivar (te quedarías fuera); el servidor también lo impide
+      if (u.id_usuario === sesion.get()?.usuario?.id_usuario) {
+        activo.disabled = true;
+        activo.title = "Es tu cuenta: no puedes desactivarte a ti mismo";
+      }
       activo.addEventListener("change", () => accion(async () => {
         await servicios.actualizarUsuario(u.id_usuario, { activo: activo.checked });
         avisar(`Cuenta ${u.correo} ${activo.checked ? "activada" : "desactivada (baja lógica: conserva su historial)"}.`, "ok");
