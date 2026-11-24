@@ -51,6 +51,13 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
   const cajaEditor = crear("div", { clase: "admin-editor" });
   contenedor.replaceChildren(barra, cuerpo);
 
+  // Ventana emergente para editar un carrito, la cuenta de un cliente o los
+  // movimientos de un modelo: así no hay que bajar a buscar lo que se abrió.
+  const dialogo = crear("dialog", { clase: "ventana-admin", atributos: { "aria-label": "Detalle" } });
+  document.body.append(dialogo);
+  dialogo.addEventListener("close", () => { editando = null; cuentaId = null; modeloId = null; });
+  dialogo.addEventListener("click", (e) => { if (e.target === dialogo) dialogo.close(); });
+
   // =================================================================
   async function cargar(...cuales) {
     const tareas = {
@@ -94,6 +101,28 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
   function pintar() {
     const vistas = { dashboard, unidades, modelos, clientes, demos, auditoria };
     cuerpo.replaceChildren(vistas[pestana]());
+    pintarVentana();
+  }
+
+  function pintarVentana() {
+    let contenido = null;
+    if (pestana === "unidades" && editando != null) {
+      const u = datos.unidades.find((x) => x.id_vehiculo === editando);
+      if (u) contenido = formularioEditarUnidad(u);
+    } else if (pestana === "modelos" && modeloId != null) {
+      contenido = panelModelo();
+    } else if (pestana === "clientes" && cuentaId != null) {
+      contenido = panelCuenta();
+    }
+    if (!contenido) {
+      if (dialogo.open) dialogo.close();
+      dialogo.replaceChildren();
+      return;
+    }
+    const scroll = dialogo.scrollTop;
+    dialogo.replaceChildren(contenido);
+    if (!dialogo.open) dialogo.showModal();
+    else dialogo.scrollTop = scroll;
   }
 
   // =================================================================
@@ -157,12 +186,8 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
       await cargar("unidades");
     });
 
-    const u = editando != null ? datos.unidades.find((x) => x.id_vehiculo === editando) : null;
-    if (editando != null && !u) editando = null;
-
     return crear("div", { clase: "admin-seccion" }, [
       form,
-      ...(u ? [formularioEditarUnidad(u)] : []),
       errores.unidades ? alerta(errores.unidades) : bloque(`Carritos (${datos.unidades.length})`, tablaUnidades(datos.unidades)),
     ]);
   }
@@ -302,7 +327,6 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
       form,
       errores.modelos ? alerta(errores.modelos) : bloque(`Modelos (${datos.modelos.length})`,
         filas.length ? tabla(["ID", "Modelo", "Micro", "Precio", "Carritos", "Exhibición", "En catálogo", "Gestionar"], filas, "Modelos comerciales") : vacio("Sin modelos.")),
-      ...(modeloId != null ? [panelModelo()] : []),
     ]);
   }
 
@@ -477,7 +501,6 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
       bloque("Sesiones activas", pintarSesiones()),
       errores.usuarios ? alerta(errores.usuarios) : bloque(`Cuentas (${datos.usuarios.length})`,
         filas.length ? tabla(["ID", "Cliente", "Rol", "Carritos", "Alta", "Activa", "Cuenta"], filas, "Clientes y administradores") : vacio("Sin cuentas.")),
-      ...(cuentaId != null ? [panelCuenta()] : []),
     ]);
   }
 
@@ -520,7 +543,7 @@ export function crearVistaAdmin({ contenedor, servicios, avisar, editorEnPestana
     const carritos = c.carritos.length
       ? tabla(["ID", "Carrito", "Serie", "Estado", "Activo", "Demos"], c.carritos.map((u) => {
         const demos = crear("button", { clase: "btn-sec", atributos: { type: "button" } }, [icono("bi-collection-play"), crear("span", { texto: "Ver y editar demos" })]);
-        demos.addEventListener("click", () => { fijarVehiculo(u.id_vehiculo); ir("demos"); });
+        demos.addEventListener("click", () => { cuentaId = null; fijarVehiculo(u.id_vehiculo); ir("demos"); });
         return crear("tr", {}, [
           crear("td", { clase: "mon-num", texto: String(u.id_vehiculo) }), crear("td", { texto: u.nombre }),
           crear("td", { texto: u.numero_serie || "—" }), crear("td", { texto: ESTADO_TEXTO[u.estado_comercial] || u.estado_comercial }),

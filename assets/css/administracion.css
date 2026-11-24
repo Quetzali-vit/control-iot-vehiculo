@@ -124,9 +124,21 @@ body[data-rol="INVITADO"] .zona-demo { display: none; }
 .tile.t-ok strong { color: #b9f5d4; }
 .tile.t-ambar strong { color: var(--ambar-claro); }
 .tile.t-cian strong { color: #bdf2ff; }
-.dos-col { display: grid; gap: 12px; min-width: 0; }
+.dos-col { display: grid; gap: 12px; min-width: 0; align-items: start; }
 
-.bloque { display: grid; gap: 8px; min-width: 0; }
+/* align-content: start → el título y la tabla quedan arriba aunque la columna
+   vecina sea más alta (así las dos columnas del Dashboard empiezan al mismo nivel) */
+.bloque { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.bloque-cabeza { min-height: 34px; }
+
+/* Ventana emergente de Administración (editar carrito, cuenta de cliente, modelo) */
+.ventana-admin {
+  width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto;
+  padding: 18px; border: 1px solid var(--borde); border-radius: 18px;
+  background: #0d1424; color: inherit; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+.ventana-admin::backdrop { background: rgba(3, 6, 14, 0.72); backdrop-filter: blur(3px); }
+.ventana-admin h4 { margin: 10px 0 0; font-size: 0.9rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--suave); }
 .bloque-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .bloque-cabeza h2, .bloque-cabeza h3, .editor-cabeza h3 {
   margin: 0; font-family: var(--f-titulo); font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase;
